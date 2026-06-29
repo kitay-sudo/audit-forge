@@ -116,8 +116,10 @@ function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
         <a href="#top" className="flex items-center gap-2.5 font-display text-lg font-bold">
-          <span className="grid size-7 place-items-center rounded-full bg-gradient-to-br from-white via-brand to-brand/40 text-[10px] font-black text-background">鏡</span>
-          <span className="font-jp">八咫</span> Yata
+          <span className="grid size-7 place-items-center rounded-full bg-gradient-to-br from-white via-brand to-brand/50 text-background shadow-[0_0_16px_hsl(252_90%_60%/.45)]">
+            <ShieldCheck className="size-4" strokeWidth={2.4} />
+          </span>
+          Yata
         </a>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           {NAV.map((n) => (
@@ -153,7 +155,7 @@ function Navbar() {
 
 function Hero({ onCopy, copied }: { onCopy: (t: string, id: string) => void; copied: string | null }) {
   return (
-    <section id="top" className="relative overflow-hidden pt-36 pb-20">
+    <section id="top" className="relative overflow-hidden pt-28 pb-16">
       {/* backdrop */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-grid mask-fade-b opacity-60" />
       <div className="pointer-events-none absolute left-1/2 top-[-10%] -z-10 h-[560px] w-[820px] -translate-x-1/2 rounded-full bg-brand/20 blur-[130px]" />
@@ -165,7 +167,7 @@ function Hero({ onCopy, copied }: { onCopy: (t: string, id: string) => void; cop
             </Badge>
           </Reveal>
           <Reveal delay={80}>
-            <h1 className="mt-6 font-display text-5xl font-bold leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 font-display text-[2rem] font-bold leading-[1.08] tracking-tight text-balance sm:text-4xl lg:text-5xl">
               Аудит безопасности<br />проекта —{" "}
               <span className="bg-gradient-to-r from-brand via-violet-400 to-sky-300 bg-clip-text text-transparent">одной ссылкой.</span>
             </h1>
@@ -198,7 +200,7 @@ function Hero({ onCopy, copied }: { onCopy: (t: string, id: string) => void; cop
 
         {/* mirror visual */}
         <Reveal delay={160} className="flex justify-center">
-          <div className="relative aspect-square w-[min(78vw,400px)] animate-float">
+          <div className="relative aspect-square w-[min(72vw,360px)]">
             <div className="absolute inset-0 rounded-full bg-brand/25 blur-[60px]" />
             <div className="absolute inset-0 animate-spin-slow rounded-full bg-[conic-gradient(from_0deg,transparent,hsl(252_90%_66%/.5),transparent_35%,hsl(199_90%_60%/.4),transparent_70%)] opacity-70" />
             <div className="absolute inset-3 rounded-full border border-white/10 bg-background/40 backdrop-blur-sm" />
@@ -407,9 +409,9 @@ function Faq() {
 
 function FinalCta() {
   return (
-    <section className="relative overflow-hidden py-28">
-      <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/20 blur-[120px]" />
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 mask-radial" />
+    <section className="relative py-28">
+      <div className="pointer-events-none absolute inset-0 -z-10 [background:radial-gradient(620px_420px_at_50%_45%,hsl(252_90%_60%/0.16),transparent_72%)]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-30 [mask-image:radial-gradient(58%_58%_at_50%_45%,black,transparent_76%)]" />
       <div className="container text-center">
         <Reveal>
           <h2 className="mx-auto max-w-2xl font-display text-4xl font-bold tracking-tight sm:text-5xl">
@@ -438,8 +440,10 @@ function Footer() {
     <footer className="border-t border-border py-12">
       <div className="container flex flex-col items-center justify-between gap-6 sm:flex-row">
         <a href="#top" className="flex items-center gap-2.5 font-display font-bold">
-          <span className="grid size-6 place-items-center rounded-full bg-gradient-to-br from-white via-brand to-brand/40 text-[9px] font-black text-background">鏡</span>
-          <span className="font-jp">八咫</span> Yata
+          <span className="grid size-6 place-items-center rounded-full bg-gradient-to-br from-white via-brand to-brand/50 text-background">
+            <ShieldCheck className="size-3.5" strokeWidth={2.4} />
+          </span>
+          Yata
         </a>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
           <a className="hover:text-foreground" href={REPO} target="_blank" rel="noopener">GitHub</a>
