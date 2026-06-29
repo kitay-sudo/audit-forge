@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "yata-site",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4599", "--directory", "docs"],
-      "port": 4599
+      "name": "yata-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "web", "dev", "--port", "4600", "--host", "--strictPort"],
+      "port": 4600
     }
   ]
 }
