@@ -9,7 +9,7 @@
 > *what to look for*, and *how to deliver fixes as diffs*. The end goal: after one full pass the project can
 > run in production without fear of being breached, leaking data, or falling over under load.
 >
-> **Version:** 1.1 · **Target year of best practices:** 2026 · **License:** MIT
+> **Version:** 1.2 · **Target year of best practices:** 2026 · **License:** MIT
 >
 > ---
 >
@@ -549,7 +549,45 @@ apps now embed AI, and these flaws bypass classic controls.
 - High-stakes decisions (medical, legal, financial, code execution) made on unverified model output without
   human review or grounding. Recommend grounding, citations, and confidence/guardrail checks.
 
-> **Tooling:** `garak` (LLM vuln scanner), `promptfoo`/`deepteam` (red-teaming), provider-side guardrails.
+### 17.8 Detecting **data leaks in AI-agent systems** (do this concretely)
+
+The most common real-world AI failure is *sensitive data leaving the system through the model or its tools*.
+Trace these source → sink paths explicitly and report each as a finding with location + fix:
+
+- **PII/secrets shipped to the model provider.** Find every call site that builds a prompt or message
+  (`messages=[...]`, `prompt=`, `.chat.completions.create`, `.messages.create`, `generateContent`,
+  `invoke(`, LangChain/LlamaIndex chains) and check what gets interpolated in. Flag raw DB rows, full user
+  records, env vars, API keys, access tokens, internal IDs, or whole files passed into the prompt without
+  redaction/field-allowlisting.
+- **Secrets or authz logic in the system prompt.** System prompts are extractable (17.2). Grep system/role
+  prompts for keys, passwords, internal URLs, customer data, or "only allow if user is admin"-style rules
+  that must live in code, not text.
+- **Conversation / memory / trace logging.** Find where prompts, completions, tool args, and chat history
+  are persisted or sent to observability (LangSmith, Langfuse, Helicone, Sentry, app logs, analytics). Flag
+  storage of full prompts/outputs containing PII/secrets, infinite retention, and third-party trace
+  shipping without consent (cross-ref Phase 8, Phase 14).
+- **Agent tool / function-calling egress.** For each tool the agent can call (HTTP fetch, DB query, file
+  read/write, shell, email/Slack send, code exec), ask: can the model be steered (incl. via *indirect*
+  injection from retrieved content) to read sensitive data and send it outward? Require allow-listed
+  actions, per-tool authz, output filtering, and human confirmation for exfil-capable tools (cross-ref
+  17.1, 17.4).
+- **RAG / vector store leakage.** Confirm retrieval is scoped to the requesting user/tenant (a vector-store
+  IDOR leaks other tenants' documents into answers). Check metadata filters are enforced server-side, not
+  client-supplied.
+- **Training / fine-tuning / "improve the model" toggles.** Flag user data sent to providers with
+  training-on-by-default, or fine-tune datasets containing un-scrubbed PII/secrets.
+- **Model output reflected to the wrong audience.** Output built from one user's data shown to another
+  (cache key collisions, shared context, multi-tenant prompt reuse).
+- **MCP / external tool servers.** Untrusted or over-scoped tool servers that can read local files/env and
+  return them to the model; unauthenticated tool endpoints; tool-name shadowing.
+
+> **How to surface them fast:** grep for provider SDK calls and agent/tool definitions, then follow each
+> tainted input back to its source and each tool forward to its sink. Where feasible, red-team with `garak`
+> / `promptfoo` / `deepteam` (incl. an indirect-injection document in the RAG corpus) against a local
+> instance you own. Report every confirmed path with severity, the leaked data class, and a diff.
+
+> **Tooling:** `garak` (LLM vuln scanner), `promptfoo`/`deepteam` (red-teaming), `gitleaks`/`trufflehog` for
+> secrets in prompts/configs, provider-side guardrails.
 
 ---
 

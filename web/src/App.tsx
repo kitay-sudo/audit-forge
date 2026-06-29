@@ -1,8 +1,9 @@
 import * as React from "react";
 import {
   ShieldCheck, GitBranch, Bot, Boxes, Gauge, ScanLine, Lock, Database, Network,
-  KeyRound, FileCode, Server, Eye, Workflow, Sparkles, ArrowRight, Copy, Check,
-  Github, Menu, Terminal, ListChecks, FileDiff, CircleCheck, BookOpen,
+  KeyRound, FileCode, Server, Eye, Workflow, Sparkles, Copy, Check,
+  Github, Menu, Terminal, FileDiff, CircleCheck, BookOpen,
+  Star, Heart, Send, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,14 +16,20 @@ import { Reveal } from "@/components/Reveal";
 
 const REPO = "https://github.com/kitay-sudo/yata";
 const RAW = "https://raw.githubusercontent.com/kitay-sudo/yata/main/YATA.md";
+const TELEGRAM = "https://t.me/kitay9";
+const TELEGRAM_HANDLE = "@kitay9";
 const PROMPT =
   "Скачай " + RAW + " и выполни его целиком на ЭТОМ репозитории. Создай в корне папку yata/ и сложи туда полный отчёт и по одному применяемому .diff-патчу на каждую уязвимость. Остальной код — только чтение; патчи не применяй, пока я не скажу.";
+
+// Версия и дата последнего обновления — обновляются при каждом релизе
+const VERSION = "1.2";
+const UPDATED = "29 июня 2026";
 
 const NAV = [
   { href: "#start", label: "Запуск" },
   { href: "#features", label: "Возможности" },
-  { href: "#stack", label: "Стек" },
   { href: "#phases", label: "17 фаз" },
+  { href: "#support", label: "Поддержать" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -72,7 +79,7 @@ const phases = [
   { n: 12, t: "Frontend", d: "XSS, CSP, CSRF, хранение токенов, секреты в бандле", icon: FileCode },
   { n: 13, t: "Инфра / CI / IaC", d: "Контейнеры, Terraform/K8s, облачные права", icon: Server },
   { n: 14, t: "Observability", d: "Логи, мониторинг, audit trail, инциденты", icon: Eye },
-  { n: 15, t: "AI / LLM / agentic", d: "OWASP LLM Top 10 (2025)", icon: Bot, cond: true },
+  { n: 15, t: "AI / LLM / agentic", d: "Prompt injection, утечки данных и system-prompt, excessive agency, RAG/vector, cost-DoS", icon: Bot, cond: true },
   { n: 16, t: "Mobile / MASVS", d: "Хранение, сеть, платформа, устойчивость", icon: Boxes, cond: true },
   { n: 17, t: "Privacy & compliance", d: "PII, GDPR/PCI/HIPAA/SOC 2, retention", icon: ShieldCheck },
 ];
@@ -86,20 +93,29 @@ const stacks = [
 ];
 
 const tools = [
-  ["SCA / deps", "osv-scanner · trivy · grype"],
-  ["SBOM", "syft · cdxgen · trivy sbom"],
-  ["SAST", "semgrep · CodeQL · bandit"],
-  ["Secrets", "gitleaks · trufflehog"],
-  ["IaC / config", "checkov · tfsec · hadolint"],
-  ["Containers", "trivy image · grype"],
-  ["DAST", "OWASP ZAP · nuclei"],
-  ["LLM / AI", "garak · promptfoo"],
-  ["Mobile", "MobSF · apkleaks"],
+  { layer: "SCA / зависимости", names: "osv-scanner · trivy · grype", desc: "Ищут известные уязвимости (CVE) в подключённых пакетах и lock-файлах." },
+  { layer: "SBOM", names: "syft · cdxgen · trivy sbom", desc: "Строят полную опись компонентов (CycloneDX/SPDX) — прозрачность цепочки поставки." },
+  { layer: "SAST", names: "semgrep · CodeQL · bandit", desc: "Статический анализ исходного кода: находят уязвимые паттерны ещё до запуска." },
+  { layer: "Секреты", names: "gitleaks · trufflehog", desc: "Сканируют код и историю git на утёкшие ключи, токены и пароли." },
+  { layer: "IaC / конфиг", names: "checkov · tfsec · hadolint", desc: "Проверяют Terraform / K8s / Dockerfile на небезопасные настройки." },
+  { layer: "Контейнеры", names: "trivy image · grype", desc: "Сканируют образы на CVE и неправильную конфигурацию слоёв." },
+  { layer: "DAST", names: "OWASP ZAP · nuclei", desc: "Динамические тесты живого приложения — только против ваших собственных сред." },
+  { layer: "LLM / AI", names: "garak · promptfoo · deepteam", desc: "Red-teaming AI: prompt injection, джейлбрейки и утечки данных модели." },
+  { layer: "Mobile", names: "MobSF · apkleaks", desc: "Статический и динамический анализ мобильных приложений по MASVS." },
 ];
 
 const standards = [
-  "OWASP Top 10", "OWASP API Top 10", "OWASP LLM Top 10 (2025)", "MASVS", "ASVS 5.0",
-  "WSTG", "CWE Top 25", "CIS Benchmarks", "NIST SSDF", "SLSA", "MITRE ATT&CK",
+  { name: "OWASP Top 10", year: "2021", desc: "Десять самых критичных рисков веб-приложений: битый доступ, инъекции, криптосбои." },
+  { name: "OWASP API Top 10", year: "2023", desc: "Главные риски API: BOLA/IDOR, битая аутентификация, избыточное потребление ресурсов." },
+  { name: "OWASP LLM Top 10", year: "2025", desc: "Риски AI-приложений: prompt injection, утечка данных и system-prompt, excessive agency." },
+  { name: "OWASP MASVS", desc: "Стандарт проверки мобильных приложений: хранение, крипто, сеть, платформа." },
+  { name: "OWASP ASVS 5.0", desc: "Уровни верификации — насколько глубоко проверять каждую область безопасности." },
+  { name: "OWASP WSTG", desc: "Web Security Testing Guide — пошаговые процедуры тестирования каждого класса уязвимостей." },
+  { name: "CWE Top 25", desc: "Самые опасные и частые типы дефектов кода по классификации MITRE." },
+  { name: "CIS Benchmarks", desc: "Эталонные безопасные конфигурации для ОС, облаков, контейнеров и БД." },
+  { name: "NIST SSDF", desc: "Secure Software Development Framework — практики безопасной разработки на уровне процесса." },
+  { name: "SLSA", desc: "Уровни целостности цепочки поставок: провенанс сборки и подпись артефактов." },
+  { name: "MITRE ATT&CK", desc: "База тактик и техник реальных атакующих — чтобы мыслить как противник." },
 ];
 
 const faqs = [
@@ -107,7 +123,8 @@ const faqs = [
   { q: "Какие агенты поддерживаются?", a: "Любые, которые умеют читать файлы репозитория и ходить в интернет за ссылкой. Если агент не умеет качать URL — открой raw-ссылку сам, вставь содержимое в чат и попроси выполнить плейбук." },
   { q: "Это безопасно для моего кода?", a: "Да. По умолчанию агент работает в режиме чтения и пишет результат только в папку yata/. Патчи он не применяет, пока ты явно не попросишь. Динамические тесты — только против сред, которыми ты владеешь." },
   { q: "Что именно я получу на выходе?", a: "Папку yata/ с индексом и вердиктом go/no-go, полным отчётом, находками по severity (с локацией, путём эксплуатации, CVSS, маппингом на OWASP/CWE) и готовыми .diff-патчами под git apply." },
-  { q: "Это бесплатно?", a: "Да, проект открыт под лицензией MIT. Используй свободно, в том числе в коммерческих проектах." },
+  { q: "Найдёт ли утечки в работе AI-агентов?", a: "Да — это отдельная фаза 15. Yata ищет: prompt injection (прямой и непрямой), утечку system-prompt и секретов в промптах, отправку PII/секретов сторонним LLM-провайдерам, утечки через память/логи диалогов, excessive agency (агент/инструменты с лишними правами), уязвимости RAG/vector (включая мульти-tenant изоляцию и data poisoning), небезопасную обработку вывода модели и cost-DoS. Всё с маппингом на OWASP LLM Top 10 (2025)." },
+  { q: "Это бесплатно?", a: "Да, проект открыт под лицензией MIT. Используй свободно, в том числе в коммерческих проектах. Если он тебе помог — поставь звезду и поддержи разработку." },
 ];
 
 /* ----------------------------- sections ----------------------------- */
@@ -118,6 +135,7 @@ function Navbar() {
         <a href="#top" className="flex items-center gap-2.5 font-display text-lg font-bold">
           <span className="size-7 rounded-full bg-white shadow-[0_0_14px_rgba(255,255,255,.3)]" />
           Yata
+          <span className="ml-0.5 rounded-full border border-border px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">v{VERSION}</span>
         </a>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           {NAV.map((n) => (
@@ -309,30 +327,27 @@ function StackTabs() {
 function Phases() {
   return (
     <section id="phases" className="container scroll-mt-24 py-24">
-      <SectionTitle eyebrow="План аудита" title="17 фаз, по порядку" sub="Каждая фаза — цель, конкретные действия и exit-gate. Наведи на карточку для подсказки. Условные фазы (AI, Mobile) запускаются только если применимы." />
-      <TooltipProvider delayDuration={120}>
-        <div className="relative mt-12 overflow-hidden rounded-2xl border border-border bg-card/40 p-5 sm:p-7">
-          <div className="pointer-events-none absolute inset-0 bg-grid opacity-30" />
-          <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {phases.map((p, i) => (
-              <Reveal key={p.n} delay={i * 25}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className={`group h-full cursor-default rounded-xl border bg-background/60 p-4 transition-all hover:-translate-y-1 hover:border-brand/50 ${p.cond ? "border-amber-500/30" : "border-border"}`}>
-                      <div className="flex items-center justify-between">
-                        <span className={`font-mono text-[11px] font-semibold ${p.cond ? "text-amber-400" : "text-brand"}`}>P{p.n}{p.cond ? "·усл" : ""}</span>
-                        <p.icon className="size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
-                      </div>
-                      <div className="mt-2 text-[13.5px] font-medium leading-snug">{p.t}</div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[220px]">{p.d}</TooltipContent>
-                </Tooltip>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </TooltipProvider>
+      <SectionTitle eyebrow="План аудита" title="17 фаз, по порядку" sub="Каждая фаза — цель, конкретные действия и exit-gate. Условные фазы (AI, Mobile) запускаются только если применимы." />
+      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {phases.map((p, i) => (
+          <Reveal key={p.n} delay={i * 25}>
+            <Card className={`group h-full transition-all hover:-translate-y-1 ${p.cond ? "border-amber-500/30 hover:border-amber-400/60" : "hover:border-brand/50"}`}>
+              <CardContent className="flex h-full flex-col p-5">
+                <div className="flex items-center justify-between">
+                  <span className={`font-mono text-xs font-semibold ${p.cond ? "text-amber-400" : "text-brand"}`}>
+                    Phase {p.n}{p.cond ? " · условная" : ""}
+                  </span>
+                  <span className={`grid size-9 place-items-center rounded-lg border bg-secondary transition-colors ${p.cond ? "border-amber-500/30 text-amber-400 group-hover:border-amber-400/50" : "border-border text-brand group-hover:border-brand/40"}`}>
+                    <p.icon className="size-4" />
+                  </span>
+                </div>
+                <h3 className="mt-3 font-display text-lg font-semibold leading-tight">{p.t}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.d}</p>
+              </CardContent>
+            </Card>
+          </Reveal>
+        ))}
+      </div>
     </section>
   );
 }
@@ -340,14 +355,24 @@ function Phases() {
 function Standards() {
   return (
     <section className="container py-24">
-      <SectionTitle eyebrow="На чём основано" title="Лучшие практики 2026" sub="Свод признанных стандартов индустрии — с поправкой на актуальные угрозы." />
-      <Reveal delay={120}>
-        <div className="mx-auto mt-10 flex max-w-3xl flex-wrap justify-center gap-2.5">
-          {standards.map((s) => (
-            <Badge key={s} variant="outline" className="border-border bg-card px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground">{s}</Badge>
-          ))}
-        </div>
-      </Reveal>
+      <SectionTitle eyebrow="На чём основано" title="Лучшие практики 2026" sub="Свод признанных мировых стандартов — простыми словами, что означает каждый и зачем он нужен." />
+      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {standards.map((s, i) => (
+          <Reveal key={s.name} delay={i * 35}>
+            <Card className="h-full transition-colors hover:border-brand/40">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2">
+                  <span className="font-display font-semibold">{s.name}</span>
+                  {s.year && (
+                    <Badge variant="outline" className="border-border px-2 py-0 text-[11px] text-muted-foreground">{s.year}</Badge>
+                  )}
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
+              </CardContent>
+            </Card>
+          </Reveal>
+        ))}
+      </div>
     </section>
   );
 }
@@ -355,19 +380,84 @@ function Standards() {
 function Tooling() {
   return (
     <section className="container py-24">
-      <SectionTitle eyebrow="Инструменты" title="Матрица OSS-тулинга" sub="Агент использует то, что уже есть в проекте; иначе — этот бесплатный набор покрывает все слои." />
-      <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {tools.map(([tl, tv], i) => (
-          <Reveal key={tl} delay={i * 50}>
-            <Card className="transition-colors hover:border-brand/40">
+      <SectionTitle eyebrow="Инструменты" title="Матрица OSS-тулинга" sub="Агент сначала использует то, что уже есть в проекте; иначе — этот бесплатный набор покрывает все слои. Что делает каждый:" />
+      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {tools.map((t, i) => (
+          <Reveal key={t.layer} delay={i * 35}>
+            <Card className="h-full transition-colors hover:border-brand/40">
               <CardContent className="p-5">
-                <div className="font-display text-xs font-semibold uppercase tracking-wide text-brand">{tl}</div>
-                <div className="mt-1.5 font-mono text-[13.5px]">{tv}</div>
+                <div className="font-display text-xs font-semibold uppercase tracking-wide text-brand">{t.layer}</div>
+                <div className="mt-1.5 font-mono text-sm text-foreground">{t.names}</div>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t.desc}</p>
               </CardContent>
             </Card>
           </Reveal>
         ))}
       </div>
+    </section>
+  );
+}
+
+function Support() {
+  return (
+    <section id="support" className="container scroll-mt-24 py-24">
+      <SectionTitle
+        eyebrow="Поддержать проект"
+        title="Звёзды, спонсорство и контакты"
+        sub="Yata — открытый проект и развивается силами сообщества. Любая поддержка помогает держать его актуальным."
+      />
+      <div className="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-3">
+        <Reveal>
+          <a href={REPO} target="_blank" rel="noopener" className="block h-full">
+            <Card className="h-full transition-all hover:-translate-y-1 hover:border-brand/50">
+              <CardContent className="p-6">
+                <div className="grid size-11 place-items-center rounded-lg border border-border bg-secondary text-amber-300"><Star className="size-5" /></div>
+                <h3 className="mt-4 font-display text-lg font-semibold">Поставить звезду</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">Самый простой способ поддержать — ⭐ на GitHub. Это помогает проекту расти и находить новых контрибьюторов.</p>
+              </CardContent>
+            </Card>
+          </a>
+        </Reveal>
+        <Reveal delay={80}>
+          <a href={TELEGRAM} target="_blank" rel="noopener" className="block h-full">
+            <Card className="h-full transition-all hover:-translate-y-1 hover:border-brand/50">
+              <CardContent className="p-6">
+                <div className="grid size-11 place-items-center rounded-lg border border-border bg-secondary text-brand"><Heart className="size-5" /></div>
+                <h3 className="mt-4 font-display text-lg font-semibold">Донат и спонсорство</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">Поддержать разработку напрямую или стать спонсором — напиши в Telegram, договоримся об удобном способе.</p>
+              </CardContent>
+            </Card>
+          </a>
+        </Reveal>
+        <Reveal delay={160}>
+          <a href={TELEGRAM} target="_blank" rel="noopener" className="block h-full">
+            <Card className="h-full transition-all hover:-translate-y-1 hover:border-brand/50">
+              <CardContent className="p-6">
+                <div className="grid size-11 place-items-center rounded-lg border border-border bg-secondary text-sky-300"><Send className="size-5" /></div>
+                <h3 className="mt-4 font-display text-lg font-semibold">Контакты</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">Вопросы, идеи, баги или сотрудничество — Telegram <span className="font-semibold text-foreground">{TELEGRAM_HANDLE}</span>.</p>
+              </CardContent>
+            </Card>
+          </a>
+        </Reveal>
+      </div>
+
+      {/* версия и обновления */}
+      <Reveal delay={120}>
+        <div className="mx-auto mt-6 flex max-w-4xl flex-col items-center justify-between gap-4 rounded-xl border border-border bg-card/60 p-5 sm:flex-row">
+          <div className="flex items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-secondary text-brand"><RefreshCw className="size-5" /></div>
+            <div>
+              <div className="font-display font-semibold">Постоянно обновляется</div>
+              <p className="text-sm text-muted-foreground">Плейбук развивается вслед за новыми угрозами и трендами в мире AI и безопасности.</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge variant="brand" className="px-3 py-1 font-mono text-xs">v{VERSION}</Badge>
+            <Badge variant="outline" className="px-3 py-1 text-xs text-muted-foreground">обновлено {UPDATED}</Badge>
+          </div>
+        </div>
+      </Reveal>
     </section>
   );
 }
@@ -430,11 +520,12 @@ function Footer() {
           <a className="hover:text-foreground" href={REPO} target="_blank" rel="noopener">GitHub</a>
           <a className="hover:text-foreground" href={`${REPO}/blob/main/YATA.md`} target="_blank" rel="noopener">Плейбук</a>
           <a className="hover:text-foreground" href={`${REPO}/blob/main/REPORT_TEMPLATE.md`} target="_blank" rel="noopener">Шаблон отчёта</a>
+          <a className="hover:text-foreground" href={TELEGRAM} target="_blank" rel="noopener">Telegram {TELEGRAM_HANDLE}</a>
           <a className="hover:text-foreground" href={`${REPO}/blob/main/LICENSE`} target="_blank" rel="noopener">MIT</a>
         </div>
       </div>
       <p className="container mt-8 text-center text-xs text-muted-foreground/70">
-        八咫 Yata · универсальный плейбук аудита безопасности для AI-агентов · сделано для эпохи AI-кодинга · 2026
+        八咫 Yata · универсальный плейбук аудита безопасности для AI-агентов · версия {VERSION} · обновлено {UPDATED}
       </p>
     </footer>
   );
@@ -452,6 +543,7 @@ export default function App() {
         <Phases />
         <Standards />
         <Tooling />
+        <Support />
         <Faq />
         <FinalCta />
       </main>

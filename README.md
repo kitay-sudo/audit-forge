@@ -9,7 +9,7 @@
 являющего истину. Yata подносит зеркало к твоему коду и показывает, что он скрывает.</em></p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.1-2ea44f">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.2-2ea44f">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue">
   <img alt="Made for AI agents" src="https://img.shields.io/badge/made%20for-AI%20agents-7c3aed">
   <img alt="Best practices 2026" src="https://img.shields.io/badge/best%20practices-2026-orange">
