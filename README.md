@@ -19,6 +19,12 @@
   <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen">
 </p>
 
+<p align="center">
+  <a href="https://kitay-sudo.github.io/yata/"><img alt="Live landing page" src="https://img.shields.io/badge/%F0%9F%AA%9E%20%D0%BB%D0%B5%D0%BD%D0%B4%D0%B8%D0%BD%D0%B3-kitay--sudo.github.io%2Fyata-8b5cf6?style=for-the-badge"></a>
+</p>
+
+<p align="center"><b>🪞 Лендинг с анимациями и быстрым стартом → <a href="https://kitay-sudo.github.io/yata/">kitay-sudo.github.io/yata</a></b></p>
+
 ---
 
 ## 💡 Что это
