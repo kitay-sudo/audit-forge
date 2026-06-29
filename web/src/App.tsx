@@ -116,9 +116,7 @@ function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
         <a href="#top" className="flex items-center gap-2.5 font-display text-lg font-bold">
-          <span className="grid size-7 place-items-center rounded-full bg-gradient-to-br from-white via-brand to-brand/50 text-background shadow-[0_0_16px_hsl(252_90%_60%/.45)]">
-            <ShieldCheck className="size-4" strokeWidth={2.4} />
-          </span>
+          <span className="size-7 rounded-full bg-white shadow-[0_0_14px_rgba(255,255,255,.3)]" />
           Yata
         </a>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
@@ -440,9 +438,7 @@ function Footer() {
     <footer className="border-t border-border py-12">
       <div className="container flex flex-col items-center justify-between gap-6 sm:flex-row">
         <a href="#top" className="flex items-center gap-2.5 font-display font-bold">
-          <span className="grid size-6 place-items-center rounded-full bg-gradient-to-br from-white via-brand to-brand/50 text-background">
-            <ShieldCheck className="size-3.5" strokeWidth={2.4} />
-          </span>
+          <span className="size-6 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,.25)]" />
           Yata
         </a>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
