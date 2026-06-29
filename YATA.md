@@ -1,5 +1,8 @@
-# AuditForge — Universal AI-Agent Security Audit Playbook
+# 八咫 Yata — Universal AI-Agent Security Audit Playbook
 
+> *Named after **Yata-no-Kagami** (八咫鏡), the sacred mirror of Japanese myth that reveals truth and one's
+> true nature. Yata holds a mirror to your codebase and shows what it's hiding.*
+>
 > **What this file is.** A single, self-contained operating manual you can hand to *any* coding agent
 > (Claude Code, Cursor, Codex, Aider, a custom LLM harness, etc.). When an agent reads this file it must
 > understand: *what the project is*, *what stack it uses*, *how to audit it correctly*, *in what order*,
@@ -614,13 +617,13 @@ and, for APIs, **OWASP API Security Top 10 (2023)** (see §22).
 
 ## 21. Reporting & remediation — the deliverable
 
-### 21.0 Output layout — create a self-contained `auditforge/` folder in the audited project
+### 21.0 Output layout — create a self-contained `yata/` folder in the audited project
 
 **Always write your output into a single folder at the project root so it is self-contained and easy to
 review/apply.** Create exactly this structure (don't touch the rest of the repo while auditing):
 
 ```
-auditforge/
+yata/
 ├── README.md                    # Index: verdict, severity counts, links to everything, how to apply fixes
 ├── SECURITY_AUDIT_REPORT.md     # The full report (from REPORT_TEMPLATE.md)
 ├── findings/                    # One markdown file per finding (same shape as §21 below)
@@ -639,12 +642,12 @@ auditforge/
 - **IDs:** number findings by severity — `CRIT-01`, `HIGH-01`, `MED-01`, `LOW-01`, `INFO-01`. Use the same ID
   for a finding's `findings/*.md` and its `fixes/*.diff`.
 - **Patches must apply cleanly:** write each `.diff` with correct `a/` and `b/` paths from the repo root so a
-  reviewer can run `git apply auditforge/fixes/CRIT-01-<slug>.diff` (verify with
+  reviewer can run `git apply yata/fixes/CRIT-01-<slug>.diff` (verify with
   `git apply --check` mentally). Don't apply them yourself unless the human asks — the folder is a proposal.
-- **`auditforge/README.md`** is the entry point: verdict (go/no-go), severity counts, a table linking each
+- **`yata/README.md`** is the entry point: verdict (go/no-go), severity counts, a table linking each
   finding → its diff, and a one-liner to apply all fixes.
-- If the project uses a different convention, honor it; otherwise default to `auditforge/`. Suggest adding
-  `auditforge/` to `.gitignore` if the human doesn't want it committed.
+- If the project uses a different convention, honor it; otherwise default to `yata/`. Suggest adding
+  `yata/` to `.gitignore` if the human doesn't want it committed.
 
 ### 21.1 Report contents
 
@@ -755,7 +758,7 @@ blocking items at the top of the report and do not give a clean bill of health.
 
 ## 24. Quick-start prompt (paste this to the agent along with the file)
 
-> *"You are a senior application-security engineer. Read `AUDITFORGE.md` in this repository and follow it
+> *"You are a senior application-security engineer. Read `YATA.md` in this repository and follow it
 > end-to-end. Start with Phase 0 (recon & threat model) and proceed in order. Stay read-only until you
 > understand the system. Run the conditional phases (15 AI/LLM, 16 Mobile) only if they apply, and say so.
 > Produce findings using `REPORT_TEMPLATE.md`, ordered by severity, each with a concrete location, exploit
@@ -791,22 +794,22 @@ default — only run dynamic tools (ZAP/Nuclei) against environments you own.
 
 You don't need to copy any files into the project. From inside the repo you want audited, paste **one** of
 these to your agent. The agent fetches this playbook, runs it end-to-end, and writes everything into an
-`auditforge/` folder (per §21.0) — report + per-finding `.diff` patches.
+`yata/` folder (per §21.0) — report + per-finding `.diff` patches.
 
 **Fetch-and-run (one line):**
 
-> *Fetch `https://raw.githubusercontent.com/kitay-sudo/audit-forge/main/AUDITFORGE.md` and follow it
-> end-to-end on THIS repository. Create an `auditforge/` folder at the project root and write the full report
+> *Fetch `https://raw.githubusercontent.com/kitay-sudo/yata/main/YATA.md` and follow it
+> end-to-end on THIS repository. Create an `yata/` folder at the project root and write the full report
 > plus a git-apply-able `.diff` per finding there. Stay read-only on the rest of the repo; don't apply the
 > patches unless I say so. Ask before doing anything that leaves the repo.*
 
 **If your agent can't fetch URLs:** open the raw link yourself, paste the file contents into the chat, then
-add: *"Follow this playbook on this repo and write results to `auditforge/`."*
+add: *"Follow this playbook on this repo and write results to `yata/`."*
 
 **What you get back** (nothing else in the repo is modified):
 
 ```
-auditforge/
+yata/
 ├── README.md                 ← start here: verdict + severity counts + links + how to apply fixes
 ├── SECURITY_AUDIT_REPORT.md  ← full report
 ├── findings/                 ← one file per issue
@@ -819,18 +822,18 @@ auditforge/
 
 ```bash
 # review
-git apply --check auditforge/fixes/CRIT-01-*.diff
+git apply --check yata/fixes/CRIT-01-*.diff
 # apply one
-git apply auditforge/fixes/CRIT-01-<slug>.diff
+git apply yata/fixes/CRIT-01-<slug>.diff
 # or apply all, highest severity first
-for f in auditforge/fixes/CRIT-*.diff auditforge/fixes/HIGH-*.diff; do git apply "$f"; done
+for f in yata/fixes/CRIT-*.diff yata/fixes/HIGH-*.diff; do git apply "$f"; done
 ```
 
 > Tip: pin to a tag instead of `main` for reproducible audits once releases exist, e.g.
-> `.../audit-forge/v1.1/AUDITFORGE.md`.
+> `.../yata/v1.1/YATA.md`.
 
 ---
 
-<sub>AuditForge · universal AI-agent security audit playbook · contributions welcome · MIT licensed.
+<sub>Yata · universal AI-agent security audit playbook · contributions welcome · MIT licensed.
 This playbook guides defensive review of code you are authorized to audit. It is a checklist, not a
 guarantee — treat its output as expert input to a human security decision.</sub>
