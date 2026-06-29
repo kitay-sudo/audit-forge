@@ -6,7 +6,7 @@
 > *what to look for*, and *how to deliver fixes as diffs*. The end goal: after one full pass the project can
 > run in production without fear of being breached, leaking data, or falling over under load.
 >
-> **Version:** 1.0 · **Target year of best practices:** 2026 · **License:** MIT
+> **Version:** 1.1 · **Target year of best practices:** 2026 · **License:** MIT
 >
 > ---
 >
