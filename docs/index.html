@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>八咫 Yata — универсальный плейбук аудита безопасности для AI-агентов</title>
+<meta name="description" content="Yata (八咫) — один .md-файл, который превращает любого кодового агента в дотошного аудитора безопасности. Дай агенту ссылку — он проверит проект (роуты, валидация, инъекции, БД, зависимости/CVE, AI/LLM, rate limit, секреты) и создаст папку yata/ с отчётом и diff-фиксами." />
+<meta property="og:title" content="八咫 Yata — security audit playbook for AI agents" />
+<meta property="og:description" content="Дай агенту одну ссылку — он проведёт глубокий аудит безопасности проекта и выдаст отчёт + diff-фиксы." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#07080d;
+    --bg-2:#0b0d16;
+    --surface:rgba(255,255,255,.03);
+    --surface-2:rgba(255,255,255,.05);
+    --border:rgba(255,255,255,.08);
+    --border-strong:rgba(255,255,255,.14);
+    --text:#eef0f8;
+    --muted:#9aa1bd;
+    --faint:#646b8a;
+    --violet:#8b5cf6;
+    --indigo:#6366f1;
+    --cyan:#22d3ee;
+    --pink:#e879f9;
+    --green:#34d399;
+    --amber:#fbbf24;
+    --red:#fb7185;
+    --grad: linear-gradient(110deg,#a78bfa 0%,#22d3ee 45%,#e879f9 100%);
+    --grad-soft: linear-gradient(110deg,#8b5cf6,#22d3ee);
+    --radius:18px;
+    --maxw:1120px;
+    --font:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    --display:'Space Grotesk','Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --jp:'Noto Sans JP',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  ::selection{background:rgba(139,92,246,.35);color:#fff}
+
+  /* ====== animated page backdrop ====== */
+  .bg-fx{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+  .bg-fx::before{ /* base radial vignette */
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(1100px 700px at 75% -5%, rgba(99,102,241,.20), transparent 60%),
+      radial-gradient(900px 600px at 10% 10%, rgba(34,211,238,.12), transparent 55%),
+      radial-gradient(800px 800px at 50% 110%, rgba(232,121,249,.10), transparent 60%);
+  }
+  .grid-fx{position:fixed;inset:-2px;z-index:-2;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:54px 54px;
+    -webkit-mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 75%);
+            mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 75%);
+    animation:gridmove 18s linear infinite;
+  }
+  @keyframes gridmove{from{background-position:0 0,0 0}to{background-position:54px 54px,54px 54px}}
+  .orb{position:fixed;border-radius:50%;filter:blur(70px);opacity:.5;z-index:-2;pointer-events:none}
+  .orb.a{width:520px;height:520px;background:radial-gradient(circle,#7c3aed,transparent 70%);top:-160px;right:-120px;animation:float1 16s ease-in-out infinite}
+  .orb.b{width:460px;height:460px;background:radial-gradient(circle,#0891b2,transparent 70%);top:280px;left:-160px;animation:float2 20s ease-in-out infinite}
+  @keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,40px)}}
+  @keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}
+
+  /* ====== nav ====== */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 26px;
+    backdrop-filter:blur(14px);
+    background:rgba(7,8,13,.55);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s,background .3s;
+  }
+  nav.scrolled{border-bottom:1px solid var(--border);background:rgba(7,8,13,.8)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.2px}
+  .brand .kanji{font-family:var(--jp);font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .mirror{font-size:20px;filter:drop-shadow(0 0 6px rgba(139,92,246,.6))}
+  .nav-links{display:flex;align-items:center;gap:26px;font-size:14.5px;color:var(--muted)}
+  .nav-links a{transition:color .2s}
+  .nav-links a:hover{color:var(--text)}
+  .nav-cta{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:11px;
+    background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);font-weight:600;font-size:14px;transition:.2s}
+  .nav-cta:hover{border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,92,246,.15)}
+  @media(max-width:780px){.nav-links{display:none}}
+
+  /* ====== layout ====== */
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  section{position:relative}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--cyan)}
+  h2.sec{font-family:var(--display);font-size:clamp(28px,4vw,44px);font-weight:700;line-height:1.1;margin:14px 0 14px;letter-spacing:-.5px}
+  .sec-sub{color:var(--muted);font-size:17px;max-width:620px}
+  .center{text-align:center}
+  .center .sec-sub{margin-inline:auto}
+
+  /* ====== hero ====== */
+  header.hero{position:relative;padding:160px 0 90px;text-align:center;overflow:hidden}
+  .mirror-glow{position:absolute;top:60px;left:50%;width:680px;height:680px;transform:translateX(-50%);z-index:-1;pointer-events:none;
+    background:conic-gradient(from 0deg,#8b5cf6,#22d3ee,#e879f9,#6366f1,#8b5cf6);
+    border-radius:50%;filter:blur(90px);opacity:.28;animation:spin 22s linear infinite}
+  @keyframes spin{to{transform:translateX(-50%) rotate(360deg)}}
+  .kanji-watermark{position:absolute;top:40px;left:50%;transform:translateX(-50%);font-family:var(--jp);font-weight:900;
+    font-size:clamp(180px,34vw,420px);line-height:1;color:rgba(255,255,255,.025);z-index:-1;user-select:none;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.05),transparent);-webkit-background-clip:text;background-clip:text;}
+  .pill{display:inline-flex;align-items:center;gap:9px;padding:7px 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:#dfe2f3;
+    background:rgba(255,255,255,.04);border:1px solid var(--border-strong);position:relative;overflow:hidden}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .pill::after{content:"";position:absolute;inset:0;border-radius:999px;padding:1px;background:var(--grad);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.5}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(40px,7vw,82px);line-height:1.02;letter-spacing:-1.5px;margin:26px 0 0}
+  h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% auto;animation:shimmer 6s linear infinite}
+  @keyframes shimmer{to{background-position:200% center}}
+  .hero-jp{font-family:var(--jp);font-weight:900;display:block;font-size:clamp(34px,6vw,64px);margin-bottom:-6px;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% auto;animation:shimmer 6s linear infinite}
+  .lead{font-size:clamp(17px,2.4vw,21px);color:var(--muted);max-width:680px;margin:24px auto 0}
+  .lead b{color:var(--text);font-weight:600}
+  .myth{font-size:15px;color:var(--faint);max-width:560px;margin:16px auto 0;font-style:italic}
+  .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:14px 24px;border-radius:13px;font-weight:600;font-size:15.5px;cursor:pointer;border:1px solid transparent;transition:.22s;font-family:var(--font)}
+  .btn-primary{background:var(--grad-soft);color:#fff;box-shadow:0 8px 30px rgba(99,102,241,.4)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(99,102,241,.55)}
+  .btn-ghost{background:var(--surface-2);color:var(--text);border-color:var(--border-strong)}
+  .btn-ghost:hover{border-color:var(--violet);transform:translateY(-2px)}
+  .hero-stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin-top:54px}
+  .hstat{text-align:center}
+  .hstat .num{font-family:var(--display);font-size:34px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hstat .lbl{font-size:13px;color:var(--faint);letter-spacing:.5px;margin-top:2px}
+
+  /* ====== bootstrap / quickstart ====== */
+  .qs{margin-top:70px;padding-top:10px}
+  .terminal{max-width:820px;margin:0 auto;background:linear-gradient(180deg,#0e1019,#0a0c14);border:1px solid var(--border-strong);
+    border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 0 1px rgba(139,92,246,.08)}
+  .term-bar{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+  .term-bar .d{width:12px;height:12px;border-radius:50%}
+  .d.r{background:#ff5f57}.d.y{background:#febc2e}.d.g{background:#28c840}
+  .term-title{margin-left:10px;font-family:var(--mono);font-size:12.5px;color:var(--faint)}
+  .term-body{padding:22px 22px 8px;font-family:var(--mono);font-size:14px;line-height:1.7;text-align:left}
+  .term-body .c{color:var(--faint)}
+  .term-body .p{color:var(--cyan)}
+  .term-body .s{color:var(--green)}
+  .term-body .v{color:var(--violet)}
+  .term-body .w{color:#e8eaf6}
+  .copy-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 22px 20px;border-top:1px solid var(--border);margin-top:12px}
+  .copy-row .url{font-family:var(--mono);font-size:12.5px;color:var(--muted);word-break:break-all}
+  .copy-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;background:var(--grad-soft);color:#fff;font-weight:600;font-size:13.5px;border:none;cursor:pointer;white-space:nowrap;transition:.2s}
+  .copy-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .copy-btn.ok{background:var(--green);color:#04210f}
+
+  /* ====== generic blocks ====== */
+  .block{padding:90px 0}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+
+  /* ====== how it works ====== */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:50px}
+  .step{position:relative;padding:30px 26px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);transition:.25s}
+  .step:hover{border-color:var(--border-strong);transform:translateY(-4px);background:var(--surface-2)}
+  .step .n{font-family:var(--display);font-size:15px;font-weight:700;width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:var(--grad-soft);color:#fff;margin-bottom:18px}
+  .step h3{font-size:19px;font-weight:700;margin-bottom:8px}
+  .step p{color:var(--muted);font-size:15px}
+  .step .arrow{position:absolute;right:-16px;top:46px;color:var(--faint);font-size:20px;z-index:2}
+  @media(max-width:780px){.steps{grid-template-columns:1fr}.step .arrow{display:none}}
+
+  /* ====== features bento ====== */
+  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;margin-top:50px}
+  .card{padding:26px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden;transition:.25s}
+  .card:hover{border-color:var(--border-strong);transform:translateY(-4px)}
+  .card::before{content:"";position:absolute;inset:0;border-radius:var(--radius);padding:1px;background:var(--grad);opacity:0;transition:opacity .3s;
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+  .card:hover::before{opacity:.45}
+  .card .ico{font-size:26px;margin-bottom:14px;display:block}
+  .card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:14.5px}
+  .card.lg{grid-column:span 3}
+  .card.md{grid-column:span 3}
+  .card.sm{grid-column:span 2}
+  @media(max-width:880px){.bento{grid-template-columns:1fr 1fr}.card.lg,.card.md,.card.sm{grid-column:span 1}}
+  @media(max-width:560px){.bento{grid-template-columns:1fr}}
+
+  /* ====== phases ====== */
+  .phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:46px}
+  .phase{padding:16px;border-radius:13px;background:var(--surface);border:1px solid var(--border);transition:.2s;cursor:default}
+  .phase:hover{border-color:var(--violet);background:var(--surface-2);transform:translateY(-3px)}
+  .phase .pn{font-family:var(--mono);font-size:12px;color:var(--cyan);font-weight:600}
+  .phase .pt{font-size:14.5px;font-weight:600;margin-top:4px}
+  .phase.cond .pn{color:var(--pink)}
+  .phase .pd{font-size:12.5px;color:var(--faint);margin-top:4px;line-height:1.45}
+
+  /* ====== output tree ====== */
+  .tree-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center;margin-top:46px}
+  @media(max-width:880px){.tree-wrap{grid-template-columns:1fr}}
+  .tree{font-family:var(--mono);font-size:13.5px;line-height:1.9;background:linear-gradient(180deg,#0e1019,#0a0c14);border:1px solid var(--border-strong);border-radius:16px;padding:24px 26px}
+  .tree .dir{color:var(--cyan);font-weight:600}
+  .tree .file{color:var(--text)}
+  .tree .cm{color:var(--faint)}
+  .tree .crit{color:var(--red)}
+  .tree .high{color:var(--amber)}
+  .out-list{display:flex;flex-direction:column;gap:16px}
+  .out-item{display:flex;gap:14px;align-items:flex-start}
+  .out-item .b{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--border);font-size:17px}
+  .out-item h4{font-size:15.5px;font-weight:700}
+  .out-item p{color:var(--muted);font-size:14px}
+
+  /* ====== standards ====== */
+  .badges{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:40px;max-width:880px;margin-inline:auto}
+  .std{padding:10px 16px;border-radius:11px;background:var(--surface);border:1px solid var(--border);font-size:14px;font-weight:600;color:var(--muted);transition:.2s}
+  .std:hover{color:var(--text);border-color:var(--border-strong);transform:translateY(-2px)}
+  .std b{color:var(--text)}
+
+  /* ====== tooling ====== */
+  .tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:46px}
+  .tool{padding:18px 20px;border-radius:13px;background:var(--surface);border:1px solid var(--border);transition:.2s}
+  .tool:hover{border-color:var(--border-strong);transform:translateY(-3px)}
+  .tool .tl{font-size:13px;color:var(--cyan);font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+  .tool .tv{font-family:var(--mono);font-size:13.5px;color:var(--text);margin-top:6px;line-height:1.6}
+
+  /* ====== scope ====== */
+  .scope{max-width:760px;margin:0 auto;padding:26px 30px;border-radius:var(--radius);background:rgba(251,113,133,.06);border:1px solid rgba(251,113,133,.25)}
+  .scope h3{font-size:17px;font-weight:700;color:#ffd9df;display:flex;align-items:center;gap:9px}
+  .scope p{color:#e9b9c1;font-size:14.5px;margin-top:8px}
+
+  /* ====== final CTA ====== */
+  .final{text-align:center;padding:100px 24px;position:relative;overflow:hidden}
+  .final .mirror-glow{top:-120px;opacity:.22}
+  .final h2{font-family:var(--display);font-size:clamp(30px,5vw,52px);font-weight:700;letter-spacing:-1px}
+  .final p{color:var(--muted);font-size:18px;max-width:560px;margin:18px auto 0}
+
+  /* ====== footer ====== */
+  footer{border-top:1px solid var(--border);padding:46px 24px 60px}
+  .foot{max-width:var(--maxw);margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+  .foot .brand{font-size:16px}
+  .foot-links{display:flex;gap:24px;font-size:14px;color:var(--muted)}
+  .foot-links a:hover{color:var(--text)}
+  .foot-note{width:100%;color:var(--faint);font-size:13px;margin-top:24px;text-align:center;line-height:1.6}
+
+  /* ====== reveal anim ====== */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<div class="bg-fx"></div>
+<div class="grid-fx"></div>
+<div class="orb a"></div>
+<div class="orb b"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a class="brand" href="#top"><span class="mirror">🪞</span><span class="kanji">八咫</span> Yata</a>
+  <div class="nav-links">
+    <a href="#start">Запуск</a>
+    <a href="#how">Как работает</a>
+    <a href="#features">Возможности</a>
+    <a href="#phases">17 фаз</a>
+    <a href="#output">Результат</a>
+  </div>
+  <a class="nav-cta" href="https://github.com/kitay-sudo/yata" target="_blank" rel="noopener">★ GitHub</a>
+</nav>
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="mirror-glow"></div>
+  <div class="kanji-watermark">八咫</div>
+  <div class="wrap">
+    <span class="pill reveal in"><span class="dot"></span> Один .md-файл · работает с любым AI-агентом · MIT</span>
+    <h1 class="reveal in d1">
+      <span class="hero-jp">八咫</span>
+      Зеркало, что вскрывает<br><span class="grad">скрытые уязвимости</span>
+    </h1>
+    <p class="lead reveal in d2"><b>Yata</b> превращает любого кодового агента в дотошного аудитора безопасности.
+      Дай агенту одну ссылку — он поймёт стек, проведёт <b>глубокий аудит</b> и создаст папку с отчётом и <b>готовыми diff-фиксами</b>.</p>
+    <p class="myth reveal in d2">Назван в честь Ята-но-Кагами (八咫鏡) — священного зеркала из японской мифологии, являющего истину.</p>
+    <div class="hero-btns reveal in d3">
+      <button class="btn btn-primary" onclick="document.getElementById('start').scrollIntoView()">⚡ Запустить аудит</button>
+      <a class="btn btn-ghost" href="https://github.com/kitay-sudo/yata/blob/main/YATA.md" target="_blank" rel="noopener">📖 Читать плейбук</a>
+    </div>
+    <div class="hero-stats reveal in d4">
+      <div class="hstat"><div class="num">17</div><div class="lbl">фаз аудита</div></div>
+      <div class="hstat"><div class="num">1</div><div class="lbl">ссылка для запуска</div></div>
+      <div class="hstat"><div class="num">∞</div><div class="lbl">языков и стеков</div></div>
+      <div class="hstat"><div class="num">diff</div><div class="lbl">готовые фиксы</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- QUICKSTART / BOOTSTRAP -->
+<section class="block" id="start" style="padding-top:30px">
+  <div class="wrap center">
+    <span class="eyebrow reveal">⚡ Боотстрап одной ссылкой</span>
+    <h2 class="sec reveal">Запусти прямо отсюда</h2>
+    <p class="sec-sub reveal">Открой свой проект в AI-агенте (Claude Code, Cursor, Codex…) и вставь этот промпт.
+      Копировать файлы в проект не нужно — агент сам всё скачает и выполнит.</p>
+
+    <div class="qs">
+      <div class="terminal reveal d1">
+        <div class="term-bar">
+          <span class="d r"></span><span class="d y"></span><span class="d g"></span>
+          <span class="term-title">your-project — agent prompt</span>
+        </div>
+        <div class="term-body">
+          <div><span class="c"># вставь это агенту внутри проекта, который проверяем</span></div>
+          <div><span class="p">$</span> <span class="w" id="prompt-text">Скачай https://raw.githubusercontent.com/kitay-sudo/yata/main/YATA.md и выполни его целиком на ЭТОМ репозитории. Создай в корне проекта папку <span class="v">yata/</span> и сложи туда полный отчёт и по одному применяемому <span class="s">.diff</span>-патчу на каждую уязвимость. Остальной репозиторий — только чтение; патчи не применяй, пока я не скажу.</span></div>
+        </div>
+        <div class="copy-row">
+          <span class="url">raw.githubusercontent.com/kitay-sudo/yata/main/YATA.md</span>
+          <div style="display:flex;gap:10px">
+            <button class="copy-btn" id="copyUrl">⧉ Копировать ссылку</button>
+            <button class="copy-btn" id="copyPrompt">⧉ Копировать промпт</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- WHAT / HOW -->
+<section class="block" id="how">
+  <div class="wrap center">
+    <span class="eyebrow reveal">Как это работает</span>
+    <h2 class="sec reveal">Ссылка → аудит → папка с фиксами</h2>
+    <p class="sec-sub reveal">Три шага. Никакой настройки, никакой установки, никакого вендор-лока.</p>
+  </div>
+  <div class="wrap">
+    <div class="steps">
+      <div class="step reveal d1">
+        <div class="n">01</div>
+        <h3>Даёшь ссылку</h3>
+        <p>Вставляешь агенту одну raw-ссылку на плейбук. Агент скачивает его и читает как инструкцию: что за проект, какой стек, как и в каком порядке проверять.</p>
+        <span class="arrow">→</span>
+      </div>
+      <div class="step reveal d2">
+        <div class="n">02</div>
+        <h3>Агент проводит аудит</h3>
+        <p>17 фаз по порядку: от разведки и threat-model до инъекций, БД, AI/LLM и rate-limit. Каждая находка — с реальным путём эксплуатации, без «воды» и ложных срабатываний.</p>
+        <span class="arrow">→</span>
+      </div>
+      <div class="step reveal d3">
+        <div class="n">03</div>
+        <h3>Получаешь <code>yata/</code></h3>
+        <p>Самодостаточная папка: отчёт с вердиктом go/no-go, находки по severity и применяемые <code>git apply</code> diff-патчи. Остальной код агент не трогает.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FEATURES -->
+<section class="block" id="features">
+  <div class="wrap center">
+    <span class="eyebrow reveal">Что внутри</span>
+    <h2 class="sec reveal">Глубина уровня senior AppSec-инженера</h2>
+    <p class="sec-sub reveal">Не просто чеклист — операционное руководство, по которому агент работает как опытный пентестер.</p>
+  </div>
+  <div class="wrap">
+    <div class="bento">
+      <div class="card lg reveal d1">
+        <span class="ico">🧭</span>
+        <h3>Понимает любой проект сам</h3>
+        <p>Автоопределение стека по файлам-маркерам (Node, Python, Go, Java, Ruby, PHP, .NET, Rust, Docker/K8s/Terraform), карта точек входа, границ доверия и «crown jewels» — прежде чем что-то трогать.</p>
+      </div>
+      <div class="card md reveal d2">
+        <span class="ico">🩹</span>
+        <h3>Фиксы как diff, а не советы</h3>
+        <p>Каждая уязвимость закрывается минимальным unified-diff патчем, который применяется через <code>git apply</code>. Идиоматично коду, без поломки логики.</p>
+      </div>
+      <div class="card sm reveal d1">
+        <span class="ico">🤖</span>
+        <h3>AI / LLM безопасность</h3>
+        <p>OWASP LLM Top&nbsp;10 (2025): prompt injection, утечка system-prompt, excessive agency, RAG/vector, cost-DoS.</p>
+      </div>
+      <div class="card sm reveal d2">
+        <span class="ico">🔗</span>
+        <h3>Supply chain 2026</h3>
+        <p>CVE, SBOM (CycloneDX/SPDX), SLSA-provenance, подпись артефактов, пиннинг по SHA.</p>
+      </div>
+      <div class="card sm reveal d3">
+        <span class="ico">🚦</span>
+        <h3>Rate limit и нагрузка</h3>
+        <p>Где нужны лимиты, защита от исчерпания ресурсов, таймауты — чтобы не упасть под нагрузкой.</p>
+      </div>
+      <div class="card md reveal d1">
+        <span class="ico">🎯</span>
+        <h3>Дисциплина против false-positive</h3>
+        <p>Каждая находка обязана иметь реальный достижимый путь эксплуатации и точную локацию <code>file:line</code>. Никаких «выглядит небезопасно».</p>
+      </div>
+      <div class="card lg reveal d2">
+        <span class="ico">✅</span>
+        <h3>Вердикт «можно ли в прод»</h3>
+        <p>Финальный production-readiness gate: чёткое go / go-with-conditions / no-go по 18 пунктам — секреты, авторизация, инъекции, лимиты, шифрование, логирование, инфра, AI и приватность. Чтобы деплоить без страха быть взломанным или словить утечку.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PHASES -->
+<section class="block" id="phases">
+  <div class="wrap center">
+    <span class="eyebrow reveal">План аудита</span>
+    <h2 class="sec reveal">17 фаз, по порядку</h2>
+    <p class="sec-sub reveal">Каждая фаза — цель, конкретные действия и exit-gate. Условные фазы (AI, Mobile) запускаются только если применимы.</p>
+  </div>
+  <div class="wrap">
+    <div class="phase-grid">
+      <div class="phase reveal"><div class="pn">Phase 0</div><div class="pt">Recon & threat model</div><div class="pd">Стек, точки входа, границы доверия</div></div>
+      <div class="phase reveal"><div class="pn">Phase 1</div><div class="pt">Зависимости</div><div class="pd">CVE, supply chain, typosquatting</div></div>
+      <div class="phase reveal"><div class="pn">Phase 2</div><div class="pt">Секреты и конфиг</div><div class="pd">Утечки, заголовки, CORS, TLS</div></div>
+      <div class="phase reveal"><div class="pn">Phase 3</div><div class="pt">Роуты и поверхность</div><div class="pd">Логика роутов, IDOR/BOLA</div></div>
+      <div class="phase reveal"><div class="pn">Phase 4</div><div class="pt">AuthN & AuthZ</div><div class="pd">Сессии, JWT, контроль доступа</div></div>
+      <div class="phase reveal"><div class="pn">Phase 5</div><div class="pt">Валидация и инъекции</div><div class="pd">SQLi, XSS, SSRF, RCE, SSTI</div></div>
+      <div class="phase reveal"><div class="pn">Phase 6</div><div class="pt">Логические ошибки</div><div class="pd">Race conditions, деньги, workflow</div></div>
+      <div class="phase reveal"><div class="pn">Phase 7</div><div class="pt">База данных</div><div class="pd">Запросы, least privilege, PII</div></div>
+      <div class="phase reveal"><div class="pn">Phase 8</div><div class="pt">Внешние выходы</div><div class="pd">Почта, вебхуки, утечки в логи</div></div>
+      <div class="phase reveal"><div class="pn">Phase 9</div><div class="pt">Rate limit & DoS</div><div class="pd">Лимиты, устойчивость к нагрузке</div></div>
+      <div class="phase reveal"><div class="pn">Phase 10</div><div class="pt">Криптография</div><div class="pd">Хеши, шифрование, ключи</div></div>
+      <div class="phase reveal"><div class="pn">Phase 11</div><div class="pt">Файлы и storage</div><div class="pd">Загрузки, zip-slip, S3</div></div>
+      <div class="phase reveal"><div class="pn">Phase 12</div><div class="pt">Frontend</div><div class="pd">XSS, CSP, CSRF, токены</div></div>
+      <div class="phase reveal"><div class="pn">Phase 13</div><div class="pt">Инфра / CI-CD / IaC</div><div class="pd">Контейнеры, Terraform, права</div></div>
+      <div class="phase reveal"><div class="pn">Phase 14</div><div class="pt">Observability</div><div class="pd">Логи, мониторинг, инциденты</div></div>
+      <div class="phase reveal cond"><div class="pn">Phase 15 ·усл.</div><div class="pt">AI / LLM / agentic</div><div class="pd">OWASP LLM Top 10 (2025)</div></div>
+      <div class="phase reveal cond"><div class="pn">Phase 16 ·усл.</div><div class="pt">Mobile / MASVS</div><div class="pd">Хранение, сеть, платформа</div></div>
+      <div class="phase reveal"><div class="pn">Phase 17</div><div class="pt">Privacy & compliance</div><div class="pd">PII, GDPR/PCI/HIPAA/SOC 2</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- OUTPUT -->
+<section class="block" id="output">
+  <div class="wrap center">
+    <span class="eyebrow reveal">Результат</span>
+    <h2 class="sec reveal">Одна папка <code>yata/</code> — всё в ней</h2>
+    <p class="sec-sub reveal">Самодостаточно и готово к ревью. Остальной репозиторий агент не модифицирует.</p>
+  </div>
+  <div class="wrap">
+    <div class="tree-wrap">
+      <div class="tree reveal d1">
+<span class="dir">yata/</span>
+├── <span class="file">README.md</span>                 <span class="cm">← вердикт + severity + ссылки</span>
+├── <span class="file">SECURITY_AUDIT_REPORT.md</span>  <span class="cm">← полный отчёт</span>
+├── <span class="dir">findings/</span>
+│   ├── <span class="crit">CRIT-01-idor.md</span>
+│   └── <span class="high">HIGH-01-sqli.md</span>
+├── <span class="dir">fixes/</span>
+│   ├── <span class="crit">CRIT-01-idor.diff</span>     <span class="cm">git apply ✔</span>
+│   └── <span class="high">HIGH-01-sqli.diff</span>
+├── <span class="file">route-inventory.md</span>
+└── <span class="dir">appendix/</span>             <span class="cm">← сырой вывод SCA/SAST</span>
+      </div>
+      <div class="out-list">
+        <div class="out-item reveal d1"><div class="b">📋</div><div><h4>Индекс и отчёт</h4><p>Вердикт go/no-go, счётчик находок по severity, таблица «находка → дифф» и полный отчёт по шаблону.</p></div></div>
+        <div class="out-item reveal d2"><div class="b">🔎</div><div><h4>Находки по severity</h4><p>Каждая с локацией, путём эксплуатации, CVSS (для High/Critical) и маппингом на OWASP/CWE.</p></div></div>
+        <div class="out-item reveal d3"><div class="b">🩹</div><div><h4>Применяемые патчи</h4><p>По одному <code>.diff</code> на проблему с единым ID (CRIT-01, HIGH-01…). Просмотри и применяй <code>git apply</code>.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- STANDARDS -->
+<section class="block">
+  <div class="wrap center">
+    <span class="eyebrow reveal">На чём основано</span>
+    <h2 class="sec reveal">Лучшие практики 2026 года</h2>
+    <p class="sec-sub reveal">Свод признанных стандартов индустрии — с поправкой на актуальные угрозы.</p>
+    <div class="badges">
+      <span class="std reveal"><b>OWASP</b> Top 10 (2021)</span>
+      <span class="std reveal"><b>OWASP API</b> Top 10 (2023)</span>
+      <span class="std reveal"><b>OWASP LLM</b> Top 10 (2025)</span>
+      <span class="std reveal"><b>OWASP MASVS</b> (mobile)</span>
+      <span class="std reveal"><b>OWASP ASVS</b> 5.0</span>
+      <span class="std reveal"><b>OWASP WSTG</b></span>
+      <span class="std reveal"><b>CWE</b> Top 25</span>
+      <span class="std reveal"><b>CIS</b> Benchmarks</span>
+      <span class="std reveal"><b>NIST</b> SSDF</span>
+      <span class="std reveal"><b>SLSA</b></span>
+      <span class="std reveal"><b>MITRE</b> ATT&CK</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- TOOLING -->
+<section class="block">
+  <div class="wrap center">
+    <span class="eyebrow reveal">Инструменты</span>
+    <h2 class="sec reveal">Матрица OSS-тулинга</h2>
+    <p class="sec-sub reveal">Агент использует то, что уже есть в проекте; иначе — этот бесплатный набор покрывает все слои.</p>
+  </div>
+  <div class="wrap">
+    <div class="tools">
+      <div class="tool reveal"><div class="tl">SCA / deps</div><div class="tv">osv-scanner · trivy · grype</div></div>
+      <div class="tool reveal"><div class="tl">SBOM</div><div class="tv">syft · cdxgen · trivy sbom</div></div>
+      <div class="tool reveal"><div class="tl">SAST</div><div class="tv">semgrep · CodeQL · bandit</div></div>
+      <div class="tool reveal"><div class="tl">Secrets</div><div class="tv">gitleaks · trufflehog</div></div>
+      <div class="tool reveal"><div class="tl">IaC / config</div><div class="tv">checkov · tfsec · hadolint</div></div>
+      <div class="tool reveal"><div class="tl">Containers</div><div class="tv">trivy image · grype</div></div>
+      <div class="tool reveal"><div class="tl">DAST</div><div class="tv">OWASP ZAP · nuclei</div></div>
+      <div class="tool reveal"><div class="tl">LLM / AI</div><div class="tv">garak · promptfoo · deepteam</div></div>
+      <div class="tool reveal"><div class="tl">Mobile</div><div class="tv">MobSF · apkleaks</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SCOPE -->
+<section class="block">
+  <div class="wrap">
+    <div class="scope reveal">
+      <h3>⚠️ Только для авторизованного аудита</h3>
+      <p>Yata предназначен для защитной проверки кода, который вам разрешено аудитировать: свой проект, проект работодателя, клиент с договором, CTF или исследование с разрешением. По умолчанию — статический/локальный анализ; любые динамические тесты только против сред, которыми вы владеете. Найденные секреты редактируются, а не выводятся. Это чеклист и навигатор для агента, а не гарантия — результат служит экспертным входом для решения человека.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="mirror-glow"></div>
+  <div class="wrap">
+    <h2 class="reveal">Поднеси зеркало к своему коду</h2>
+    <p class="reveal d1">Одна ссылка — и агент покажет всё, что прячет твой проект. Бесплатно, открыто, под MIT.</p>
+    <div class="hero-btns reveal d2" style="margin-top:30px">
+      <button class="btn btn-primary" onclick="document.getElementById('start').scrollIntoView()">⚡ Запустить аудит</button>
+      <a class="btn btn-ghost" href="https://github.com/kitay-sudo/yata" target="_blank" rel="noopener">★ Star на GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot">
+    <a class="brand" href="#top"><span class="mirror">🪞</span><span class="kanji">八咫</span> Yata</a>
+    <div class="foot-links">
+      <a href="https://github.com/kitay-sudo/yata" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/kitay-sudo/yata/blob/main/YATA.md" target="_blank" rel="noopener">Плейбук</a>
+      <a href="https://github.com/kitay-sudo/yata/blob/main/REPORT_TEMPLATE.md" target="_blank" rel="noopener">Шаблон отчёта</a>
+      <a href="https://github.com/kitay-sudo/yata/blob/main/LICENSE" target="_blank" rel="noopener">MIT</a>
+    </div>
+  </div>
+  <p class="foot-note">八咫 Yata · универсальный плейбук аудита безопасности для AI-агентов · сделано для эпохи AI-кодинга · 2026</p>
+</footer>
+
+<script>
+  // nav shadow on scroll
+  const nav=document.getElementById('nav');
+  addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>20));
+
+  // reveal on scroll
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll('.reveal:not(.in)').forEach(el=>io.observe(el));
+
+  // copy buttons
+  const URL_TXT="https://raw.githubusercontent.com/kitay-sudo/yata/main/YATA.md";
+  const PROMPT_TXT=document.getElementById('prompt-text').innerText.trim();
+  function flash(btn,label){const o=btn.innerHTML;btn.classList.add('ok');btn.innerHTML='✓ '+label;setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=o},1600);}
+  async function copy(txt,btn,label){
+    try{await navigator.clipboard.writeText(txt);}
+    catch(e){const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
+    flash(btn,label);
+  }
+  document.getElementById('copyUrl').onclick=function(){copy(URL_TXT,this,'Ссылка скопирована');};
+  document.getElementById('copyPrompt').onclick=function(){copy(PROMPT_TXT,this,'Промпт скопирован');};
+</script>
+</body>
+</html>
