@@ -153,59 +153,44 @@ function Navbar() {
 
 function Hero({ onCopy, copied }: { onCopy: (t: string, id: string) => void; copied: string | null }) {
   return (
-    <section id="top" className="relative overflow-hidden pt-28 pb-16">
+    <section id="top" className="relative overflow-hidden pt-36 pb-20">
       {/* backdrop */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-grid mask-fade-b opacity-60" />
       <div className="pointer-events-none absolute left-1/2 top-[-10%] -z-10 h-[560px] w-[820px] -translate-x-1/2 rounded-full bg-brand/20 blur-[130px]" />
-      <div className="container grid items-center gap-12 lg:grid-cols-[1.1fr_.9fr]">
-        <div>
-          <Reveal>
-            <Badge variant="brand" className="px-4 py-1.5 text-[13px]">
-              <span className="font-jp font-bold">八咫</span> · плейбук безопасности, который любят агенты
-            </Badge>
-          </Reveal>
-          <Reveal delay={80}>
-            <h1 className="mt-5 font-display text-[2rem] font-bold leading-[1.08] tracking-tight text-balance sm:text-4xl lg:text-5xl">
-              Аудит безопасности<br />проекта —{" "}
-              <span className="bg-gradient-to-r from-brand via-violet-400 to-sky-300 bg-clip-text text-transparent">одной ссылкой.</span>
-            </h1>
-          </Reveal>
-          <Reveal delay={160}>
-            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-              <span className="font-semibold text-foreground">Yata</span> превращает любого кодового агента в дотошного аудитора. Он сам поймёт стек, пройдёт <span className="font-semibold text-foreground">17 фаз</span> проверки и закроет дыры <span className="font-semibold text-foreground">готовыми diff-фиксами</span>.
-            </p>
-          </Reveal>
-          <Reveal delay={240}>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button variant="brand" size="lg" asChild>
-                <a href="#start"><Sparkles /> Запустить аудит</a>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <a href={REPO} target="_blank" rel="noopener"><Github /> Открыть на GitHub</a>
-              </Button>
-            </div>
-          </Reveal>
-          <Reveal delay={320}>
-            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground">
-              {[["17", "фаз аудита"], ["1", "ссылка для запуска"], ["∞", "языков и стеков"], ["MIT", "open source"]].map(([a, b]) => (
-                <div key={b} className="flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-bold text-foreground">{a}</span>{b}
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </div>
-
-        {/* mirror visual */}
-        <Reveal delay={160} className="flex justify-center">
-          <div className="relative aspect-square w-[min(72vw,360px)]">
-            <div className="absolute inset-0 rounded-full bg-brand/25 blur-[60px]" />
-            <div className="absolute inset-0 animate-spin-slow rounded-full bg-[conic-gradient(from_0deg,transparent,hsl(252_90%_66%/.5),transparent_35%,hsl(199_90%_60%/.4),transparent_70%)] opacity-70" />
-            <div className="absolute inset-3 rounded-full border border-white/10 bg-background/40 backdrop-blur-sm" />
-            <div className="absolute inset-0 rounded-full bg-grid mask-radial opacity-40" />
-            <div className="absolute inset-0 grid place-items-center">
-              <span className="font-jp text-[88px] font-black text-foreground/90 drop-shadow-[0_0_30px_hsl(252_90%_66%/.5)]">八咫</span>
-            </div>
+      <div className="container flex flex-col items-center text-center">
+        <Reveal>
+          <Badge variant="brand" className="px-4 py-1.5 text-[13px]">
+            <span className="font-jp font-bold">八咫</span> · плейбук безопасности, который любят агенты
+          </Badge>
+        </Reveal>
+        <Reveal delay={80}>
+          <h1 className="mx-auto mt-7 max-w-4xl font-display text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            Аудит безопасности проекта —{" "}
+            <span className="bg-gradient-to-r from-brand via-violet-400 to-sky-300 bg-clip-text text-transparent">одной ссылкой.</span>
+          </h1>
+        </Reveal>
+        <Reveal delay={160}>
+          <p className="mx-auto mt-7 max-w-2xl text-balance text-lg text-muted-foreground">
+            <span className="font-semibold text-foreground">Yata</span> превращает любого кодового агента в дотошного аудитора. Он сам поймёт стек, пройдёт <span className="font-semibold text-foreground">17 фаз</span> проверки и закроет дыры <span className="font-semibold text-foreground">готовыми diff-фиксами</span>.
+          </p>
+        </Reveal>
+        <Reveal delay={240}>
+          <div className="mt-9 flex flex-wrap justify-center gap-3">
+            <Button variant="brand" size="lg" asChild>
+              <a href="#start"><Sparkles /> Запустить аудит</a>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <a href={REPO} target="_blank" rel="noopener"><Github /> Открыть на GitHub</a>
+            </Button>
+          </div>
+        </Reveal>
+        <Reveal delay={320}>
+          <div className="mt-12 flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm text-muted-foreground">
+            {[["17", "фаз аудита"], ["1", "ссылка для запуска"], ["∞", "языков и стеков"], ["MIT", "open source"]].map(([a, b]) => (
+              <div key={b} className="flex items-baseline gap-2">
+                <span className="font-display text-2xl font-bold text-foreground">{a}</span>{b}
+              </div>
+            ))}
           </div>
         </Reveal>
       </div>
