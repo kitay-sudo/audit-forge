@@ -54,6 +54,9 @@ recommendation.>`
 | 12 Client / frontend | | |
 | 13 Infra / CI-CD / IaC | | |
 | 14 Observability & IR | | |
+| 15 AI / LLM / agentic *(if applicable)* | ✅ / ⚠️ / ❌ / N/A | |
+| 16 Mobile / MASVS *(if applicable)* | ✅ / ⚠️ / ❌ / N/A | |
+| 17 Privacy & compliance | | |
 
 ---
 
@@ -121,11 +124,12 @@ recommendation.>`
 
 ## 7. Production-readiness gate
 
-> Mark each ✅ pass / ⚠️ partial / ❌ fail. Mirrors AuditForge §20.
+> Mark each ✅ pass / ⚠️ partial / ❌ fail. Mirrors AuditForge §23.
 
 - [ ] No open Critical/High (or documented, accepted, owned risk)
 - [ ] No secrets in code or git history; secret manager in use; rotation possible
 - [ ] No known-exploitable dependency CVEs
+- [ ] Supply-chain integrity: lockfile committed, deps/actions pinned, SBOM generated, artifacts signed
 - [ ] Strong AuthN; AuthZ enforced server-side on every route
 - [ ] No IDOR/BOLA — every object access ownership-checked
 - [ ] All untrusted input validated; no reachable injection sinks
@@ -137,6 +141,8 @@ recommendation.>`
 - [ ] DB least-privilege; backups exist & protected
 - [ ] Security logging + monitoring + alerting
 - [ ] Infra hardened (no public DB/admin, least-priv IAM, non-root containers, safe CI secrets)
+- [ ] **(AI apps)** Prompt-injection guardrails; LLM output untrusted; tools least-privilege; token/cost caps
+- [ ] **(If PII/regulated)** Data-flow mapped; retention + deletion; consent & GDPR/PCI/HIPAA obligations
 - [ ] Tests cover security fixes; CI runs SCA
 
 **Blocking items (if any):**

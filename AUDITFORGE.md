@@ -41,13 +41,13 @@ You are acting as a **senior application-security engineer**. Follow these rules
 5. **Every fix is a diff.** Findings that you can fix must come with a unified `diff` (or per-file
    before/after) that is minimal, idiomatic to the surrounding code, and does not break behavior. Never
    "fix" by deleting features.
-6. **Severity is mandatory.** Rate each finding with the rubric in §16 and order the report by severity.
+6. **Severity is mandatory.** Rate each finding with the rubric in §20 and order the report by severity.
 7. **Don't trust comments or docs over code.** If a README claims "all inputs are validated," verify in code.
 8. **No silent scope cuts.** If you skip an area (e.g., couldn't run the DB locally), say so explicitly in
    the report's *Coverage* section. Silence reads as "checked and clean" — that is dangerous.
 9. **Track everything.** Maintain a running findings list (use a todo/scratchpad). Don't lose findings
    between phases.
-10. **One conclusion, not a file dump.** When you finish, deliver the report in §15 format, not raw logs.
+10. **One conclusion, not a file dump.** When you finish, deliver the report in §21 format, not raw logs.
 
 ---
 
@@ -73,11 +73,18 @@ Phase 11 Files & storage           → Uploads, path handling, object storage, S
 Phase 12 Client / frontend         → XSS, CSP, CSRF, token storage, dependency drift
 Phase 13 Infra / CI-CD / IaC       → Containers, pipelines, IaC, cloud perms, headers/TLS
 Phase 14 Observability & IR        → Logging, monitoring, audit trail, secrets in logs
-Phase 15 Report & remediation      → Findings + diffs + prioritized plan + prod-readiness gate
+Phase 15 AI / LLM / agentic  (cond)→ Prompt injection, RAG, excessive agency, cost DoS (OWASP LLM)
+Phase 16 Mobile app security (cond)→ MASVS: storage, network, platform, resilience, privacy
+Phase 17 Privacy & compliance      → PII data flows, GDPR/PCI/HIPAA/SOC2 mapping, retention
+Finalize Report & remediation      → Findings + diffs + prioritized plan + prod-readiness gate
 ```
 
-> If time/budget is limited, the highest-ROI subset is: **Phase 0 → 1 → 2 → 4 → 5 → 9**. State clearly in the
-> report that the rest was descoped.
+> **Conditional phases.** Run Phase 15 only if the app uses an LLM/AI model or autonomous agents/tools; run
+> Phase 16 only if there is a mobile client (iOS/Android/React Native/Flutter). Skip-with-note if not
+> applicable.
+>
+> If time/budget is limited, the highest-ROI subset is: **Phase 0 → 1 → 2 → 4 → 5 → 9** (+ **15** if the app
+> is AI-powered). State clearly in the report that the rest was descoped.
 
 ---
 
@@ -166,8 +173,29 @@ common real-world breach vector, and tooling makes them fast to find.
 - **Postinstall / lifecycle scripts** in dependencies that run arbitrary code.
 - **License/footprint bloat:** huge transitive trees increase attack surface.
 
-**Output:** table of `package@version → advisory ID → severity → fixed-in version → upgrade risk`. For
-clear, low-risk upgrades, propose the version bump as a diff to the manifest + lockfile.
+### 3.3 Supply-chain integrity (2026 "governance era")
+
+CVE scanning is table stakes. For anything heading to production also assess **build & artifact integrity** —
+this is where modern attacks (npm/PyPI account takeovers, poisoned build steps) actually land:
+
+- **SBOM:** Is a Software Bill of Materials generated per build (CycloneDX or SPDX) and stored/attached to the
+  artifact? Recommend `syft`, `cdxgen`, or the native `npm sbom` / `trivy sbom`.
+- **Provenance / SLSA:** Are build provenance attestations produced (who built it, from which commit, with
+  which config)? Target **SLSA Build Level 2–3**. For GitHub, recommend artifact attestations + a hardened,
+  reproducible build.
+- **Artifact signing:** Are releases/images signed and verified (Sigstore `cosign`, npm provenance, signed
+  git tags)? Unsigned artifacts can be swapped.
+- **Pinned dependencies & actions:** Third-party CI actions pinned by **commit SHA**, not floating tags;
+  base images pinned by digest.
+- **Registry hygiene:** Scoped/namespaced internal packages; private registry configured to prevent
+  dependency-confusion fallthrough to public registries.
+
+> Driven by U.S. EO 14028 and the EU Cyber Resilience Act, SBOM + provenance are moving from "nice to have"
+> to compliance requirements. Flag their absence as at least **Low/Medium** for production systems.
+
+**Output:** table of `package@version → advisory ID → severity → fixed-in version → upgrade risk`, plus a
+short supply-chain-integrity note (SBOM? signed? pinned? SLSA level?). For clear, low-risk upgrades, propose
+the version bump as a diff to the manifest + lockfile.
 
 ---
 
@@ -469,7 +497,105 @@ per-instance memory, so it works behind multiple replicas.
 
 ---
 
-## 17. Severity rubric (use for every finding)
+## 17. Phase 15 — AI / LLM / agentic application security  *(conditional)*
+
+**Run this phase if** the project calls an LLM/AI model, ships a chatbot/assistant, does RAG over a vector
+store, exposes "agents" that can use tools/take actions, or processes untrusted text/files with a model.
+Maps to **OWASP Top 10 for LLM Applications (2025)**. This is the highest-value 2026 addition — most modern
+apps now embed AI, and these flaws bypass classic controls.
+
+### 17.1 Prompt injection & untrusted content (LLM01)
+- **Direct injection:** user input overrides system instructions ("ignore previous instructions…").
+- **Indirect injection:** the model ingests attacker-controlled content (a web page, email, PDF, RAG
+  document, tool output) carrying hidden instructions. *This is the dominant real-world AI attack.*
+- **Mitigations to verify:** strong instruction/data separation, input/output guardrails, treating model
+  output as untrusted, least-privilege tools, human-in-the-loop for high-impact actions.
+
+### 17.2 Sensitive information & system-prompt leakage (LLM02, LLM07)
+- Model echoes PII, secrets, other users' data, or internal context in responses.
+- **System-prompt leakage:** the hidden prompt (and any secrets/keys/business rules in it) can be extracted —
+  never put secrets or authz logic in the prompt; enforce authz in code, not in instructions.
+- PII/secret scrubbing on both inputs sent to third-party model providers and outputs returned to users.
+
+### 17.3 Improper output handling (LLM05)
+- Model output flows into a dangerous sink **without** treatment: rendered as HTML (→ XSS), run as SQL/shell
+  (→ injection/RCE), used as a file path, or executed as code. Treat LLM output exactly like user input
+  (cross-ref Phase 5).
+
+### 17.4 Excessive agency (LLM06)
+- Agents/tools with more permission than the task needs (delete, pay, email, write files, call internal APIs).
+- **Verify:** minimal tool scope, allow-listed actions, per-action authorization, spending/quantity caps,
+  confirmation gates for irreversible/high-value actions, sandboxing of code-execution tools.
+- **MCP / tool servers & plugins:** untrusted tool definitions, over-broad scopes, tool-name shadowing,
+  unauthenticated tool endpoints.
+
+### 17.5 RAG, vector & embedding weaknesses (LLM08) and poisoning (LLM04)
+- **Knowledge-base poisoning:** can an attacker insert documents into the corpus that later steer answers or
+  carry indirect injections? Validate ingestion sources.
+- **Multi-tenant vector isolation:** embeddings/namespaces scoped per tenant/user (a vector-store IDOR).
+- **Embedding inversion / data leakage** from the vector DB; access controls on the vector store.
+- **Model/data supply chain (LLM03):** provenance of models, datasets, and fine-tunes; pulling weights from
+  untrusted sources; cross-ref Phase 1.
+
+### 17.6 Unbounded consumption — cost & DoS (LLM10)
+- Token/cost limits per user/session/key; max input length and output tokens; rate limits on AI endpoints
+  (cross-ref Phase 9). Without these, a single abuser can run up an unbounded bill ("denial of wallet").
+- Loop/recursion guards on agent steps; timeouts; circuit breakers on the model provider.
+
+### 17.7 Misinformation & overreliance (LLM09)
+- High-stakes decisions (medical, legal, financial, code execution) made on unverified model output without
+  human review or grounding. Recommend grounding, citations, and confidence/guardrail checks.
+
+> **Tooling:** `garak` (LLM vuln scanner), `promptfoo`/`deepteam` (red-teaming), provider-side guardrails.
+
+---
+
+## 18. Phase 16 — Mobile application security  *(conditional · OWASP MASVS)*
+
+**Run this phase if** there is an iOS/Android/React Native/Flutter client. Maps to **OWASP MASVS** categories:
+
+- **MASVS-STORAGE:** no sensitive data in plaintext on device (logs, `SharedPreferences`/`UserDefaults`,
+  SQLite, cache, screenshots); use Keychain/Keystore.
+- **MASVS-CRYPTO:** platform crypto APIs, no hardcoded keys, secure random.
+- **MASVS-AUTH:** secure auth/session handling; biometric binding done right; tokens stored securely.
+- **MASVS-NETWORK:** TLS enforced, certificate pinning where warranted, no cleartext traffic.
+- **MASVS-PLATFORM:** safe IPC/deep-links/WebView config (no `javascript:`/file access abuse), exported
+  components locked down, no injection via intents/URL schemes.
+- **MASVS-CODE:** input validation, up-to-date dependencies, no debug code in release, no secrets in the
+  bundle (decompile-check).
+- **MASVS-RESILIENCE:** anti-tampering/root-jailbreak awareness for high-risk apps (defense-in-depth, not a
+  substitute for server-side checks).
+- **MASVS-PRIVACY:** minimal permissions, transparent data collection, no excessive tracking SDKs.
+
+> **Tooling:** `MobSF` (static+dynamic), `apkleaks`, platform linters. Remember: the device is hostile — all
+> security-critical checks must also exist server-side.
+
+---
+
+## 19. Phase 17 — Privacy & regulatory compliance
+
+Security and privacy overlap but are not the same. For any app holding personal/regulated data, assess:
+
+- **PII inventory & data-flow map:** what personal data is collected, where it is stored, who it is shared
+  with, and where it leaves the system (cross-ref Phase 8). You cannot protect data you haven't mapped.
+- **Data minimization & retention:** only necessary data collected; retention limits + deletion jobs exist;
+  no indefinite log retention of PII.
+- **Consent & purpose:** lawful basis/consent for collection and for sending data to third parties
+  (analytics, LLM providers, ad SDKs).
+- **Subject rights:** mechanisms for access, export, and **deletion** ("right to be forgotten").
+- **Encryption & access control** for regulated data (cross-ref Phases 7, 10).
+- **Framework mapping (note which apply):**
+  - **GDPR / CCPA** — personal data of EU/CA residents.
+  - **PCI DSS v4.0** — if card data is stored/processed/transmitted (ideally: don't — tokenize via a PSP).
+  - **HIPAA** — protected health information.
+  - **SOC 2 / ISO 27001** — organizational controls (often customer-required).
+- **Cross-border transfer** and data-residency constraints, if relevant.
+
+> Map relevant findings to the framework they implicate so the report doubles as a compliance gap list.
+
+---
+
+## 20. Severity rubric (use for every finding)
 
 Rate **Impact × Likelihood**, then assign a level. When in doubt, justify in one line.
 
@@ -482,11 +608,11 @@ Rate **Impact × Likelihood**, then assign a level. When in doubt, justify in on
 | **Info**     | Best-practice note, no direct exploit. |
 
 Optionally include a **CVSS 3.1/4.0 vector** for High/Critical. Map each finding to **OWASP Top 10 (2021)**
-and, for APIs, **OWASP API Security Top 10 (2023)** (see §19).
+and, for APIs, **OWASP API Security Top 10 (2023)** (see §22).
 
 ---
 
-## 18. Reporting & remediation — the deliverable
+## 21. Reporting & remediation — the deliverable
 
 Produce a single Markdown report (use `REPORT_TEMPLATE.md` in this repo). It must contain:
 
@@ -522,7 +648,7 @@ Produce a single Markdown report (use `REPORT_TEMPLATE.md` in this repo). It mus
 ```
 
 4. **Quick-wins vs. larger remediations** — a prioritized table (effort × impact).
-5. **Production-readiness gate** (see §20).
+5. **Production-readiness gate** (see §23).
 6. **Appendix** — tool outputs (SCA results, etc.), and the route inventory table.
 
 ### Rules for writing fixes
@@ -536,7 +662,7 @@ Produce a single Markdown report (use `REPORT_TEMPLATE.md` in this repo). It mus
 
 ---
 
-## 19. Reference checklists (map findings to these)
+## 22. Reference checklists (map findings to these)
 
 **OWASP Top 10 (2021):**
 A01 Broken Access Control · A02 Cryptographic Failures · A03 Injection · A04 Insecure Design ·
@@ -550,18 +676,27 @@ Authorization · API4 Unrestricted Resource Consumption · API5 Broken Function-
 API6 Unrestricted Access to Sensitive Business Flows · API7 SSRF · API8 Security Misconfiguration ·
 API9 Improper Inventory Management · API10 Unsafe Consumption of APIs.
 
-**Also useful:** OWASP ASVS (verification depth), OWASP Proactive Controls, CIS Benchmarks (infra),
-CWE Top 25, NIST SSDF.
+**OWASP Top 10 for LLM Applications (2025)** — *use for AI-powered apps (Phase 15):*
+LLM01 Prompt Injection · LLM02 Sensitive Information Disclosure · LLM03 Supply Chain · LLM04 Data & Model
+Poisoning · LLM05 Improper Output Handling · LLM06 Excessive Agency · LLM07 System Prompt Leakage ·
+LLM08 Vector & Embedding Weaknesses · LLM09 Misinformation · LLM10 Unbounded Consumption.
+
+**OWASP MASVS** (mobile, Phase 16): STORAGE · CRYPTO · AUTH · NETWORK · PLATFORM · CODE · RESILIENCE · PRIVACY.
+
+**Also useful:** OWASP ASVS 5.0 (verification depth — released 2025), OWASP Web Security Testing Guide (WSTG,
+test procedures), OWASP Proactive Controls & Cheat Sheet Series, CIS Benchmarks (infra), CWE Top 25,
+NIST SSDF, SLSA (supply-chain levels), MITRE ATT&CK (adversary techniques).
 
 ---
 
-## 20. Production-readiness gate (final go / no-go)
+## 23. Production-readiness gate (final go / no-go)
 
 Before declaring the project "safe to ship," confirm every line. Mark each ✅ / ⚠️ / ❌ in the report.
 
 - [ ] No Critical or High findings remain open (or each has an accepted, documented risk + owner).
 - [ ] No secrets in code or git history; all secrets in a secret manager; rotation possible.
 - [ ] All dependencies free of known-exploitable CVEs (or pinned with documented mitigation).
+- [ ] Supply-chain integrity: lockfile committed, deps/actions pinned, SBOM generated, artifacts signed.
 - [ ] AuthN strong (adaptive hashing, session/JWT done right); AuthZ enforced server-side on every route.
 - [ ] No IDOR/BOLA: every object access is ownership-checked.
 - [ ] All untrusted input validated; no injection sinks reachable (SQL/CMD/XSS/SSRF/path/deserialization).
@@ -573,6 +708,10 @@ Before declaring the project "safe to ship," confirm every line. Mark each ✅ /
 - [ ] DB user least-privilege; backups exist and are protected.
 - [ ] Security logging + monitoring + alerting for auth failures and anomalies.
 - [ ] Infra hardened: no public DB/admin, least-privilege IAM, containers non-root, CI secrets safe.
+- [ ] **(AI apps)** Prompt-injection guardrails; LLM output treated as untrusted; tools least-privilege;
+      token/cost limits; no secrets/authz in the system prompt.
+- [ ] **(If PII/regulated)** Data-flow mapped; retention + deletion in place; consent & framework
+      (GDPR/PCI/HIPAA) obligations met.
 - [ ] Tests cover the security fixes (regression guards) and CI runs SCA on every build.
 
 **If all green:** the project can go to production with a documented residual-risk note. **If not:** list the
@@ -580,15 +719,37 @@ blocking items at the top of the report and do not give a clean bill of health.
 
 ---
 
-## 21. Quick-start prompt (paste this to the agent along with the file)
+## 24. Quick-start prompt (paste this to the agent along with the file)
 
 > *"You are a senior application-security engineer. Read `AUDITFORGE.md` in this repository and follow it
 > end-to-end. Start with Phase 0 (recon & threat model) and proceed in order. Stay read-only until you
-> understand the system. Produce findings using `REPORT_TEMPLATE.md`, ordered by severity, each with a
-> concrete location, exploit path, and a minimal fix as a unified diff. Do not run any dynamic tests against
-> systems I don't own; ask me before doing anything that leaves the repo. End with the production-readiness
-> gate (§20). Be thorough but minimize false positives — every finding must have a real, reachable exploit
-> path."*
+> understand the system. Run the conditional phases (15 AI/LLM, 16 Mobile) only if they apply, and say so.
+> Produce findings using `REPORT_TEMPLATE.md`, ordered by severity, each with a concrete location, exploit
+> path, and a minimal fix as a unified diff. Do not run any dynamic tests against systems I don't own; ask me
+> before doing anything that leaves the repo. End with the production-readiness gate (§23). Be thorough but
+> minimize false positives — every finding must have a real, reachable exploit path."*
+
+---
+
+## 25. Recommended open-source tooling matrix
+
+Use the project's existing tools first; otherwise this free stack covers every layer. Static/local-safe by
+default — only run dynamic tools (ZAP/Nuclei) against environments you own.
+
+| Layer | Tools | Notes |
+|-------|-------|-------|
+| **SCA / deps** | `osv-scanner`, `trivy fs`, `grype`, ecosystem-native (`npm/pip/cargo audit`, `govulncheck`) | Known-CVE detection across lockfiles |
+| **SBOM** | `syft`, `cdxgen`, `trivy sbom` | CycloneDX/SPDX generation |
+| **SAST** | `semgrep` (fast, CI-friendly), `CodeQL` (deep, nightly), Bandit/gosec/etc. | Source-code flaw detection |
+| **Secrets** | `gitleaks` + `trufflehog` (run both), platform push-protection | Working tree **and** git history |
+| **IaC / config** | `checkov`, `tfsec`, `trivy config`, `hadolint` (Dockerfile) | Terraform/K8s/CloudFormation/Docker |
+| **Containers** | `trivy image`, `grype` | Image CVEs + misconfig |
+| **DAST** *(owned env only)* | OWASP `ZAP`, `nuclei` | Runtime / template-based scanning |
+| **LLM / AI** | `garak`, `promptfoo`, `deepteam` | Prompt-injection & jailbreak red-teaming (Phase 15) |
+| **Mobile** | `MobSF`, `apkleaks` | Static + dynamic mobile analysis (Phase 16) |
+
+> Don't drown the report in raw tool output — triage results into real, reachable findings per §0, and put
+> raw dumps in the report appendix.
 
 ---
 

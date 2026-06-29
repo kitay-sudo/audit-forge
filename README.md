@@ -11,6 +11,7 @@
   <img alt="Made for AI agents" src="https://img.shields.io/badge/made%20for-AI%20agents-7c3aed">
   <img alt="Best practices 2026" src="https://img.shields.io/badge/best%20practices-2026-orange">
   <img alt="OWASP Top 10" src="https://img.shields.io/badge/OWASP-Top%2010%20%2B%20API%20Top%2010-d83b01">
+  <img alt="OWASP LLM Top 10" src="https://img.shields.io/badge/OWASP-LLM%20Top%2010%20(2025)-9b59b6">
   <img alt="Stack agnostic" src="https://img.shields.io/badge/stack-agnostic-555">
   <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen">
 </p>
@@ -91,9 +92,17 @@
 | 12 | Client / frontend | XSS, CSP, CSRF, хранение токенов, секреты в бандле |
 | 13 | Infra / CI-CD / IaC | Контейнеры, пайплайны, Terraform/K8s, облачные права, сеть |
 | 14 | Observability & IR | Логирование безопасности, мониторинг, audit trail, готовность к инцидентам |
+| 15 | AI / LLM / agentic *(усл.)* | Prompt injection, RAG/vector, excessive agency, утечка system prompt, cost-DoS — **OWASP LLM Top 10 (2025)** |
+| 16 | Mobile *(усл.)* | OWASP MASVS: хранение, сеть, платформа, устойчивость, приватность |
+| 17 | Privacy & compliance | Карта потоков PII, retention/удаление, маппинг GDPR / PCI DSS / HIPAA / SOC 2 |
 
+**Условные фазы 15 и 16** запускаются только если в проекте есть AI/LLM/агенты или мобильный клиент.
 Каждая фаза имеет цель, конкретные действия и **exit gate**. Финал — **production-readiness gate**:
 чёткий вердикт go / go-with-conditions / no-go.
+
+Дополнительно плейбук углубляет supply-chain (SBOM CycloneDX/SPDX, SLSA-provenance, подпись артефактов
+через Sigstore/cosign, пиннинг зависимостей и GitHub Actions по SHA) и включает **матрицу OSS-инструментов**
+(Semgrep, CodeQL, Trivy, Grype, Gitleaks, TruffleHog, ZAP, Nuclei, Checkov, garak, MobSF).
 
 ---
 
@@ -121,8 +130,9 @@ SCA-сканеры предлагаются под каждую экосисте
 
 ## 📚 На чём основан
 
-OWASP Top 10 (2021), OWASP API Security Top 10 (2023), OWASP ASVS & Proactive Controls, CWE Top 25,
-CIS Benchmarks, NIST SSDF — с поправкой на практики 2026 года.
+OWASP Top 10 (2021), OWASP API Security Top 10 (2023), **OWASP Top 10 for LLM Applications (2025)**,
+OWASP MASVS (mobile), OWASP ASVS 5.0, OWASP WSTG, Proactive Controls & Cheat Sheets, CWE Top 25,
+CIS Benchmarks, NIST SSDF, SLSA (supply chain), MITRE ATT&CK — с поправкой на практики 2026 года.
 
 ---
 
