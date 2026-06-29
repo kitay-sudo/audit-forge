@@ -614,7 +614,41 @@ and, for APIs, **OWASP API Security Top 10 (2023)** (see §22).
 
 ## 21. Reporting & remediation — the deliverable
 
-Produce a single Markdown report (use `REPORT_TEMPLATE.md` in this repo). It must contain:
+### 21.0 Output layout — create a self-contained `auditforge/` folder in the audited project
+
+**Always write your output into a single folder at the project root so it is self-contained and easy to
+review/apply.** Create exactly this structure (don't touch the rest of the repo while auditing):
+
+```
+auditforge/
+├── README.md                    # Index: verdict, severity counts, links to everything, how to apply fixes
+├── SECURITY_AUDIT_REPORT.md     # The full report (from REPORT_TEMPLATE.md)
+├── findings/                    # One markdown file per finding (same shape as §21 below)
+│   ├── CRIT-01-<slug>.md
+│   ├── HIGH-01-<slug>.md
+│   └── ...
+├── fixes/                       # One unified-diff patch per fixable finding (git-apply-able)
+│   ├── CRIT-01-<slug>.diff
+│   └── ...
+├── route-inventory.md           # The Phase 3 attack-surface table
+└── appendix/                    # Raw tool outputs (SCA, SAST, IaC scans, SBOM)
+    └── *.txt
+```
+
+**Rules for this folder:**
+- **IDs:** number findings by severity — `CRIT-01`, `HIGH-01`, `MED-01`, `LOW-01`, `INFO-01`. Use the same ID
+  for a finding's `findings/*.md` and its `fixes/*.diff`.
+- **Patches must apply cleanly:** write each `.diff` with correct `a/` and `b/` paths from the repo root so a
+  reviewer can run `git apply auditforge/fixes/CRIT-01-<slug>.diff` (verify with
+  `git apply --check` mentally). Don't apply them yourself unless the human asks — the folder is a proposal.
+- **`auditforge/README.md`** is the entry point: verdict (go/no-go), severity counts, a table linking each
+  finding → its diff, and a one-liner to apply all fixes.
+- If the project uses a different convention, honor it; otherwise default to `auditforge/`. Suggest adding
+  `auditforge/` to `.gitignore` if the human doesn't want it committed.
+
+### 21.1 Report contents
+
+The `SECURITY_AUDIT_REPORT.md` (use `REPORT_TEMPLATE.md`) must contain:
 
 1. **Executive summary** — risk posture in 5 sentences + counts by severity + the top 3 things to fix first.
 2. **System overview & coverage** — stack, entry points, crown jewels, and *what was and wasn't audited*.
@@ -750,6 +784,50 @@ default — only run dynamic tools (ZAP/Nuclei) against environments you own.
 
 > Don't drown the report in raw tool output — triage results into real, reachable findings per §0, and put
 > raw dumps in the report appendix.
+
+---
+
+## 26. One-link bootstrap (just give the agent a URL)
+
+You don't need to copy any files into the project. From inside the repo you want audited, paste **one** of
+these to your agent. The agent fetches this playbook, runs it end-to-end, and writes everything into an
+`auditforge/` folder (per §21.0) — report + per-finding `.diff` patches.
+
+**Fetch-and-run (one line):**
+
+> *Fetch `https://raw.githubusercontent.com/kitay-sudo/audit-forge/main/AUDITFORGE.md` and follow it
+> end-to-end on THIS repository. Create an `auditforge/` folder at the project root and write the full report
+> plus a git-apply-able `.diff` per finding there. Stay read-only on the rest of the repo; don't apply the
+> patches unless I say so. Ask before doing anything that leaves the repo.*
+
+**If your agent can't fetch URLs:** open the raw link yourself, paste the file contents into the chat, then
+add: *"Follow this playbook on this repo and write results to `auditforge/`."*
+
+**What you get back** (nothing else in the repo is modified):
+
+```
+auditforge/
+├── README.md                 ← start here: verdict + severity counts + links + how to apply fixes
+├── SECURITY_AUDIT_REPORT.md  ← full report
+├── findings/                 ← one file per issue
+├── fixes/                    ← one .diff per issue
+├── route-inventory.md
+└── appendix/                 ← raw tool output
+```
+
+**Apply the fixes when you're ready** (review each diff first):
+
+```bash
+# review
+git apply --check auditforge/fixes/CRIT-01-*.diff
+# apply one
+git apply auditforge/fixes/CRIT-01-<slug>.diff
+# or apply all, highest severity first
+for f in auditforge/fixes/CRIT-*.diff auditforge/fixes/HIGH-*.diff; do git apply "$f"; done
+```
+
+> Tip: pin to a tag instead of `main` for reproducible audits once releases exist, e.g.
+> `.../audit-forge/v1.1/AUDITFORGE.md`.
 
 ---
 
